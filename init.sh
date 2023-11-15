@@ -222,6 +222,8 @@ function init_vim() {
 }
 
 function init_frp() {
+    export HTTP_PROXY=http://127.0.0.1:7890
+    export HTTPS_PROXY=http://127.0.0.1:7890
     export ALL_PROXY=socks5://127.0.0.1:7890
     echo "=> 正在配置frp"
     input=""
@@ -231,14 +233,24 @@ function init_frp() {
 
     if [[ "$input" == "c" ]]; then
         echo "配置frp客户端"
+        git clone https://gitee.com/jackwangsh/frp.git ~/opt/frpc && rm -rf ~/opt/frp/.git
+        tar xzvf ~/opt/frpc/frp_0.51.0_linux_amd64.tar.gz -C ~/opt/frpc
+        rm ~/opt/frpc/frp_0.51.0_linux_amd64/frps*
+        cp "${dir}"/frpc.ini ~/opt/frpc/
+        ln -s ~/opt/frpc/frp_0.51.0_linux_amd64 ~/opt/frpc/bin
+        # 配置systemd服务
+        echo "${password}" | sudo -S cp "${dir}"/frpc.service /etc/systemd/system/frpc.service
+        echo "${password}" | sudo -S systemctl daemon-reload
+        echo "${password}" | sudo -S systemctl enable frpc.service
+        echo "${password}" | sudo -S systemctl start frpc.service
+        echo "编辑 ~/opt/frpc/frpc.ini 文件添加规则, 别忘了systemctrl restart frpc.service"
     elif [[ "$input" == "s" ]]; then
         echo "配置frp服务端"
-        mkdir -p ~/opt/frps
-        curl -C - -o ~/opt/frps/frp_0.51.0_linux_amd64.tar.gz https://github.com/fatedier/frp/releases/download/v0.51.0/frp_0.51.0_linux_amd64.tar.gz
+        git clone https://gitee.com/jackwangsh/frp.git ~/opt/frps && rm -rf ~/opt/frp/.git
         tar xzvf ~/opt/frps/frp_0.51.0_linux_amd64.tar.gz -C ~/opt/frps
         rm ~/opt/frps/frp_0.51.0_linux_amd64/frpc*
-        cp "${dir}"/frps.ini ~/opt/frps
-
+        cp "${dir}"/frps.ini ~/opt/frps/
+        ln -s ~/opt/frps/frp_0.51.0_linux_amd64 ~/opt/frps/bin
         # 配置systemd服务
         echo "${password}" | sudo -S cp "${dir}"/frps.service /etc/systemd/system/frps.service
         echo "${password}" | sudo -S systemctl daemon-reload
@@ -263,7 +275,7 @@ function init_node() {
 #   5. 下载配置 frp
 
 #change_source
-init_clash
+#init_clash
 #init_zsh
 #init_tmux
-#init_frp
+init_frp
