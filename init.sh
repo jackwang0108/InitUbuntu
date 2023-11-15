@@ -149,8 +149,20 @@ function init_zsh() {
     # 下载zsh
     echo "${password}" | sudo -S apt install zsh
     # 下载ohmyzsh
-    # TODO: curl不稳定, 需要确认是否成功
-    echo n | sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)"
+    attempt=1
+    while [ $attempt -le 5 ]; do
+        # 检查curl的退出状态码
+        if ! (echo n | sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)"); then
+            # 删除下载到一半的文件
+            echo "重试... ${attempt}"
+            rm -rf ~/.oh-my-zsh
+        else
+            break
+        fi
+        # 等待一段时间再进行下一次尝试
+        sleep 1
+    done
+
     sleep 3
     # 配置powerlevel10k
     git clone --depth=1 https://github.com/romkatv/powerlevel10k.git "${ZSH_CUSTOM:-$HOME/.oh-my-zsh/custom}/themes/powerlevel10k"
