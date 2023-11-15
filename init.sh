@@ -165,7 +165,7 @@ function init_zsh() {
     zsh_plugin zsh-autosuggestions "https://github.com/zsh-users/zsh-autosuggestions"
     zsh_plugin zsh-syntax-highlighting https://github.com/zsh-users/zsh-syntax-highlighting.git
     # 修改默认终端
-    echo "${password}" | sudo -S chsh -s "$(which zsh)"
+    chsh -s "$(which zsh)"
     add_function ~/.zshrc
 }
 
@@ -175,6 +175,10 @@ function init_tmux() {
 }
 
 function init_vim() {
+    echo
+}
+
+function init_frp() {
     echo
 }
 
