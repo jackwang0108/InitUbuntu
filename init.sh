@@ -10,6 +10,9 @@ else
     exit 1
 fi
 
+# 脚本目录
+dir=$(dirname "$(readlink -f "$0")")
+
 # 展示系统信息
 lsb_release -idcr && echo ""
 
@@ -184,6 +187,8 @@ function init_zsh() {
 function init_tmux() {
     echo "=> 正在配置tmux"
     echo "${password}" | sudo -S apt install tmux -y
+    mkdir -p ~/opt/tmux
+    cp "${dir}"/.tmux.conf ~/
 }
 
 function init_vim() {
@@ -191,14 +196,16 @@ function init_vim() {
 }
 
 function init_frp() {
-    echo
+    echo "=> 正在配置frp"
 }
 
 # 流程
 #   1. 换源, 更新
 #   2. 下载配置 clash
 #   3. 下载配置 ZSH
+#   4. 下载配置 tmux
 
 #change_source
 #init_clash
-init_zsh
+#init_zsh
+init_tmux
