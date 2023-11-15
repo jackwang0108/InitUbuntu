@@ -84,9 +84,11 @@ function init_clash() {
     # 下载clash
     if [[ ! -e ~/opt/clash/clash ]]; then
         [[ ! -d new ]] && git clone https://gitee.com/jackwangsh/new.git
-        gzip -d new/*
+        gzip -d new/hello.gz
+        gzip -d new/GeoLite2-Country.mmdb.gz
         mkdir -p ~/opt/clash && mv new/* ~/opt/clash && rm -rf new
         mv ~/opt/clash/hello ~/opt/clash/clash
+        mv ~/opt/clash/GeoLite2-Country.mmdb ~/opt/clash/Country.mmdb
         chmod +x ~/opt/clash/clash
     fi
     # 更新订阅链接
@@ -114,9 +116,9 @@ function init_clash() {
 
     # 开机自启动
     echo "${password}" | sudo cp ~/opt/clash/clash.service /etc/systemd/system/
-    sudo systemctl daemon-reload
-    sudo systemctl enable clash.service
-    sudo systemctl start clash.service
+    echo "${password}" | sudo systemctl daemon-reload
+    echo "${password}" | sudo systemctl enable clash.service
+    echo "${password}" | sudo systemctl start clash.service
 
     # 检查状态
     status=$(systemctl status clash.service --no-pager)
@@ -135,6 +137,26 @@ function init_clash() {
     # 向bash中添加代理函数
     add_function ~/.bashrc
 
+    # 配置dashboard
+    attempt=1
+    if ! (wget -P ~/opt/clash -c https://github.com/haishanh/yacd/releases/download/v0.3.7/yacd.tar.xz); then
+        attempt+=1
+        rm ~/opt/clash/yacd.tar.xz
+    fi
+    if [[ $attempt -gt 5 ]]; then
+        echo "yacd下载失败"
+    fi
+    if [[ -e ~/opt/clash/yacd.tar.xz ]]; then
+        tar -xJf ~/opt/clash/yacd.tar.xz -C ~/opt/clash
+        mv ~/opt/clash/public ~/opt/clash/dashboard
+    fi
+    sed -i -e "s/^secret:.*/secret: '123456'/" \
+        -e "/^secret:.*/a external-ui: dashboard" \
+        ~/opt/clash/config.yaml
+    # 重启 clash 服务
+    echo "${password}" | sudo systemctl restart clash.service
+    echo "浏览器访问 http://localhost:9090/ui 或 http://$(curl ifconfig.me)/ui 以登录dashboard"
+    echo "用户名为主机地址:9090, 密码默认123456"
 }
 
 function zsh_plugin() {
@@ -159,12 +181,16 @@ function init_zsh() {
             # 删除下载到一半的文件
             echo "重试... ${attempt}"
             rm -rf ~/.oh-my-zsh
+            attempt+=1
         else
             break
         fi
         # 等待一段时间再进行下一次尝试
         sleep 1
     done
+    if [[ $attempt -gt 5 ]]; then
+        echo "oh my zsh下载失败"
+    fi
 
     sleep 3
     # 配置powerlevel10k
@@ -196,7 +222,37 @@ function init_vim() {
 }
 
 function init_frp() {
+    export ALL_PROXY=socks5://127.0.0.1:7890
     echo "=> 正在配置frp"
+    input=""
+    while [[ "$input" != "c" && "$input" != "s" ]]; do
+        read -p "配置frpc客户端/服务端[c/s]: " -r input
+    done
+
+    if [[ "$input" == "c" ]]; then
+        echo "配置frp客户端"
+    elif [[ "$input" == "s" ]]; then
+        echo "配置frp服务端"
+        mkdir -p ~/opt/frps
+        curl -C - -o ~/opt/frps/frp_0.51.0_linux_amd64.tar.gz https://github.com/fatedier/frp/releases/download/v0.51.0/frp_0.51.0_linux_amd64.tar.gz
+        tar xzvf ~/opt/frps/frp_0.51.0_linux_amd64.tar.gz -C ~/opt/frps
+        rm ~/opt/frps/frp_0.51.0_linux_amd64/frpc*
+        cp "${dir}"/frps.ini ~/opt/frps
+
+        # 配置systemd服务
+        echo "${password}" | sudo -S cp "${dir}"/frps.service /etc/systemd/system/frps.service
+        echo "${password}" | sudo -S systemctl daemon-reload
+        echo "${password}" | sudo -S systemctl enable frps.service
+        echo "${password}" | sudo -S systemctl start frps.service
+    fi
+}
+
+function init_gptnextweb() {
+    echo
+}
+
+function init_node() {
+    echo
 }
 
 # 流程
@@ -204,8 +260,10 @@ function init_frp() {
 #   2. 下载配置 clash
 #   3. 下载配置 ZSH
 #   4. 下载配置 tmux
+#   5. 下载配置 frp
 
 #change_source
-#init_clash
+init_clash
 #init_zsh
-init_tmux
+#init_tmux
+#init_frp
