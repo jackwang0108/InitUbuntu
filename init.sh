@@ -137,7 +137,7 @@ function init_clash() {
 function zsh_plugin() {
     plugin=$1
     url=$2
-    git clone --depth=1 "${url}" "${ZSH_CUSTOM:-~/.oh-my-zsh/custom}/plugins/$plugin"
+    git clone --depth=1 "${url}" "${ZSH_CUSTOM:-$HOME/.oh-my-zsh/custom}/plugins/$plugin"
     # 添加插件到.zshrc中
     sed -i "s/plugins=(/plugins=($plugin /" ~/.zshrc
     echo "已添加插件 $plugin"
@@ -149,11 +149,18 @@ function init_zsh() {
     # 下载zsh
     echo "${password}" | sudo -S apt install zsh
     # 下载ohmyzsh
+    # TODO: curl不稳定, 需要确认是否成功
     echo n | sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)"
     sleep 3
     # 配置powerlevel10k
     git clone --depth=1 https://github.com/romkatv/powerlevel10k.git "${ZSH_CUSTOM:-$HOME/.oh-my-zsh/custom}/themes/powerlevel10k"
-    echo 'source ~/powerlevel10k/powerlevel10k.zsh-theme' >>~/.zshrc
+    sed -i 's/ZSH_THEME=.*/ZSH_THEME="powerlevel10k\/powerlevel10k"/' ~/.zshrc
+    echo "\
+# To customize prompt, run \$(p10k configure) or edit ~/.p10k.zsh.
+[[ ! -f ~/.p10k.zsh ]] || source ~/.p10k.zsh
+" >>~/.zshrc
+    git clone https://gitee.com/jackwangsh/p10k_config.git ~/p10k_config
+    mv ~/p10k_config/.p10k.zsh ~ && rm -rf ~/p10k_config
     # 配置插件
     zsh_plugin zsh-autosuggestions "https://github.com/zsh-users/zsh-autosuggestions"
     zsh_plugin zsh-syntax-highlighting https://github.com/zsh-users/zsh-syntax-highlighting.git
@@ -176,6 +183,6 @@ function init_vim() {
 #   2. 下载配置 clash
 #   3. 下载配置 ZSH
 
-change_source
-init_clash
+#change_source
+#init_clash
 init_zsh
