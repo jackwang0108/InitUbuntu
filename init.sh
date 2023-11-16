@@ -46,6 +46,18 @@ deb https://mirrors.ustc.edu.cn/ubuntu/ ${code_name}-security main restricted un
     # 更新
     echo "${password}" | sudo -S apt update
     echo "${password}" | sudo -S apt upgrade -y
+
+    # 安装必要工具
+    echo "${password}" | sudo -S apt install curl dialog
+}
+
+function dialog_input() {
+    msg=$1
+    filename=$2
+    height=$3
+    width=$4
+    dialog --inputbox "${msg}" "${height}" "${width}" 2>"${filename}"
+    clear
 }
 
 function add_function() {
@@ -93,7 +105,10 @@ function init_clash() {
     fi
     # 更新订阅链接
     if [[ ! -e ~/opt/clash/config.yaml ]]; then
-        read -p "请输入Clash订阅链接: " -r -s subscription && echo ""
+        # read -p "请输入Clash订阅链接: " -r subscription && echo ""
+        cs_file="$dir"/clash_subscription.txt
+        dialog_input "请输入Clash订阅链接: " "${cs_file}" 10 100
+        subscription=$(cat "${cs_file}")
         wget -c "${subscription}" -O ~/opt/clash/config.yaml
         # 修改配置信息
         sed -i -e '/^port:/s/^/#/' \
@@ -106,8 +121,8 @@ function init_clash() {
 
     # 测试
     ~/opt/clash/clash -d ~/opt/clash &
-    sleep 3
-    if ALL_PROXY="socks5://127.0.0.1:7890" curl -# www.google.com >/dev/null; then
+    sleep 5
+    if HTTP_PROXY="http://127.0.0.1:7890" HTTPS_PROXY="http://127.0.0.1:7890" ALL_PROXY="socks5://127.0.0.1:7890" curl -# www.google.com >/dev/null; then
         echo "clash配置成功!"
     else
         echo "clash配置失败!"
@@ -121,6 +136,7 @@ function init_clash() {
     echo "${password}" | sudo systemctl start clash.service
 
     # 检查状态
+    sleep 3
     status=$(systemctl status clash.service --no-pager)
     if [[ $status =~ "Active: active" ]]; then
         echo "已配置clash开机自启动"
@@ -128,7 +144,7 @@ function init_clash() {
         echo "clash开机自启动配置失败"
     fi
     sleep 3
-    if ALL_PROXY="socks5://127.0.0.1:7890" curl -# www.google.com >/dev/null; then
+    if HTTP_PROXY="http://127.0.0.1:7890" HTTPS_PROXY="http://127.0.0.1:7890" ALL_PROXY="socks5://127.0.0.1:7890" curl -# www.google.com >/dev/null; then
         echo "clash已成功在后台运行"
     else
         echo "clash未成功在后台运行"
@@ -138,8 +154,10 @@ function init_clash() {
     add_function ~/.bashrc
 
     # 配置dashboard
+    echo "配置Clash Dashboard"
+    echo "由于DNS污染问题, 可能需要等待较长的一段时间"
     attempt=1
-    if ! (wget -P ~/opt/clash -c https://github.com/haishanh/yacd/releases/download/v0.3.7/yacd.tar.xz); then
+    if ! (wget -P ~/opt/clash -c https://hub.fastgit.xyz/haishanh/yacd/releases/download/v0.3.7/yacd.tar.xz); then
         attempt+=1
         rm ~/opt/clash/yacd.tar.xz
     fi
@@ -259,12 +277,22 @@ function init_frp() {
     fi
 }
 
-function init_gptnextweb() {
-    echo
+function init_nodejs() {
+    echo "=> 正在配置NodeJS"
+    mkdir ~/opt/nodejs/
+    wget -c -P ~/opt/nodejs https://nodejs.org/dist/v20.9.0/node-v20.9.0-linux-x64.tar.xz
+    tar xJvf ~/opt/nodejs/node-v20.9.0-linux-x64.tar.xz -C ~/opt/nodejs
+    ln -s ~/opt/nodejs/node-v20.9.0-linux-x64/bin ~/opt/nodejs/bin
+    ln -s ~/opt/nodejs/node-v20.9.0-linux-x64/include ~/opt/nodejs/include
+    ln -s ~/opt/nodejs/node-v20.9.0-linux-x64/lib ~/opt/nodejs/lib
+    ln -s ~/opt/nodejs/node-v20.9.0-linux-x64/share ~/opt/nodejs/share
+
+    # shellcheck disable=SC2016
+    echo 'export PATH=/home/jack/opt/nodejs/node-v20.9.0-linux-x64/bin:${PATH}' >>~/.zshrc
 }
 
-function init_node() {
-    echo
+function init_gptnextweb() {
+    echo "=> 正在配置ChatGPT NetWeb"
 }
 
 # 流程
@@ -275,7 +303,8 @@ function init_node() {
 #   5. 下载配置 frp
 
 #change_source
-#init_clash
+init_clash
 #init_zsh
 #init_tmux
-init_frp
+#init_frp
+#init_nodejs
