@@ -71,8 +71,9 @@ function proxy_on() {
     export HTTP_PROXY=http://127.0.0.1:7890
     export HTTPS_PROXY=http://127.0.0.1:7890
     export ALL_PROXY=socks://127.0.0.1:7890
-    git config --global https.proxy http://127.0.0.1:1080
-    git config --global https.proxy https://127.0.0.1:1080
+    git config --global https.proxy http://127.0.0.1:7890
+    git config --global https.proxy https://127.0.0.1:7890
+    alias wget="wget -e http_proxy=127.0.0.1:7890 -e https_proxy=127.0.0.1:7890"
 }
 " >>"${file}"
     fi
@@ -86,6 +87,7 @@ function proxy_off() {
     unset ALL_PROXY
     git config --global --unset http.proxy
     git config --global --unset https.proxy
+    unalias wget
 }
 " >>"${file}"
     fi
@@ -157,7 +159,7 @@ function init_clash() {
     echo "配置Clash Dashboard"
     echo "由于DNS污染问题, 可能需要等待较长的一段时间"
     attempt=1
-    if ! (wget -P ~/opt/clash -c https://github.com/haishanh/yacd/releases/download/v0.3.7/yacd.tar.xz); then
+    if ! (wget -e http_proxy=127.0.0.1:7890 -e https_proxy=127.0.0.1:7890 -P ~/opt/clash -c https://github.com/haishanh/yacd/releases/download/v0.3.7/yacd.tar.xz); then
         attempt+=1
         rm ~/opt/clash/yacd.tar.xz
     fi
@@ -190,7 +192,7 @@ function init_zsh() {
     echo "=> 正在配置zsh"
     export ALL_PROXY=socks5://127.0.0.1:7890
     # 下载zsh
-    echo "${password}" | sudo -S apt install zsh
+    echo "${password}" | sudo -S apt install -y zsh
     # 下载ohmyzsh
     attempt=1
     while [ $attempt -le 5 ]; do
@@ -236,7 +238,7 @@ function init_zsh() {
     echo "由于DNS污染问题, 可能需要等待较长的一段时间"
     attempt=1
     while [ $attempt -le 5 ]; do
-        if ! (wget -P "${dir}" -c https://github.com/ryanoasis/nerd-fonts/releases/download/v3.0.2/Agave.zip); then
+        if ! (wget -e http_proxy=127.0.0.1:7890 -e https_proxy=127.0.0.1:7890 -P "${dir}" -c https://github.com/ryanoasis/nerd-fonts/releases/download/v3.0.2/Agave.zip); then
             attempt+=1
         else
             break
@@ -303,7 +305,7 @@ function init_frp() {
 function init_nodejs() {
     echo "=> 正在配置NodeJS"
     mkdir ~/opt/nodejs/
-    wget -c -P ~/opt/nodejs https://nodejs.org/dist/v20.9.0/node-v20.9.0-linux-x64.tar.xz
+    wget -e http_proxy=127.0.0.1:7890 -e https_proxy=127.0.0.1:7890 -c -P ~/opt/nodejs https://nodejs.org/dist/v20.9.0/node-v20.9.0-linux-x64.tar.xz
     tar xJvf ~/opt/nodejs/node-v20.9.0-linux-x64.tar.xz -C ~/opt/nodejs
     ln -s ~/opt/nodejs/node-v20.9.0-linux-x64/bin ~/opt/nodejs/bin
     ln -s ~/opt/nodejs/node-v20.9.0-linux-x64/include ~/opt/nodejs/include
