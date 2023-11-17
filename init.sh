@@ -130,10 +130,10 @@ function init_clash() {
     killall clash
 
     # 开机自启动
-    echo "${password}" | sudo cp "${dir}"/clash.service /etc/systemd/system/
-    echo "${password}" | sudo systemctl daemon-reload
-    echo "${password}" | sudo systemctl enable clash.service
-    echo "${password}" | sudo systemctl start clash.service
+    echo "${password}" | sudo -S cp "${dir}"/clash.service /etc/systemd/system/
+    echo "${password}" | sudo -S systemctl daemon-reload
+    echo "${password}" | sudo -S systemctl enable clash.service
+    echo "${password}" | sudo -S systemctl start clash.service
 
     # 检查状态
     sleep 3
