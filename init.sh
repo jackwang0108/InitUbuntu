@@ -230,7 +230,7 @@ function init_zsh() {
     zsh_plugin zsh-syntax-highlighting https://github.com/zsh-users/zsh-syntax-highlighting.git
     zsh_plugin zsh-history-substring-search https://github.com/zsh-users/zsh-history-substring-search
     # 修改默认终端
-    chsh "$(whoami)" -s "$(which zsh)"
+    echo "${password}" | chsh --shell "$(which zsh)" "$(whoami)"
     add_function ~/.zshrc
 
     # 下载字体
