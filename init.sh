@@ -130,7 +130,7 @@ function init_clash() {
     killall clash
 
     # 开机自启动
-    echo "${password}" | sudo cp ~/opt/clash/clash.service /etc/systemd/system/
+    echo "${password}" | sudo cp "${dir}"/clash.service /etc/systemd/system/
     echo "${password}" | sudo systemctl daemon-reload
     echo "${password}" | sudo systemctl enable clash.service
     echo "${password}" | sudo systemctl start clash.service
@@ -157,7 +157,7 @@ function init_clash() {
     echo "配置Clash Dashboard"
     echo "由于DNS污染问题, 可能需要等待较长的一段时间"
     attempt=1
-    if ! (wget -P ~/opt/clash -c https://hub.fastgit.xyz/haishanh/yacd/releases/download/v0.3.7/yacd.tar.xz); then
+    if ! (wget -P ~/opt/clash -c https://github.com/haishanh/yacd/releases/download/v0.3.7/yacd.tar.xz); then
         attempt+=1
         rm ~/opt/clash/yacd.tar.xz
     fi
@@ -221,11 +221,34 @@ function init_zsh() {
     git clone https://gitee.com/jackwangsh/p10k_config.git ~/p10k_config
     mv ~/p10k_config/.p10k.zsh ~ && rm -rf ~/p10k_config
     # 配置插件
+    # zsh自带插件
+    sed -i "s/plugins=(/plugins=(copypath copyfile copybuffer sudo /" ~/.zshrc
+    # github下载插件
     zsh_plugin zsh-autosuggestions "https://github.com/zsh-users/zsh-autosuggestions"
     zsh_plugin zsh-syntax-highlighting https://github.com/zsh-users/zsh-syntax-highlighting.git
+    zsh_plugin zsh-history-substring-search https://github.com/zsh-users/zsh-history-substring-search
     # 修改默认终端
-    chsh -s "$(which zsh)"
+    chsh "$(whoami)" -s "$(which zsh)"
     add_function ~/.zshrc
+
+    # 下载字体
+    echo "正在配置字体"
+    echo "由于DNS污染问题, 可能需要等待较长的一段时间"
+    attempt=1
+    while [ $attempt -le 5 ]; do
+        if ! (wget -P "${dir}" -c https://github.com/ryanoasis/nerd-fonts/releases/download/v3.0.2/Agave.zip); then
+            attempt+=1
+        else
+            break
+        fi
+    done
+    # 安装字体
+    echo "${password}" | sudo -S mkdir -p /usr/share/fonts/Agave
+    echo "${password}" | sudo -S unzip -q "${dir}"/Agave.zip -d /usr/share/fonts/Agave
+    sudo chmod 744/usr/share/fonts/Agave/*.ttf
+    echo "${password}" | sudo mkfontscale
+    echo "${password}" | sudo mkfontdir
+    echo "${password}" | sudo fc-cache -fv
 }
 
 function init_tmux() {
@@ -291,20 +314,63 @@ function init_nodejs() {
     echo 'export PATH=/home/jack/opt/nodejs/node-v20.9.0-linux-x64/bin:${PATH}' >>~/.zshrc
 }
 
+function init_rust() {
+    echo "$1" # arguments are accessible through $1, $2,...
+}
+
+function init_yarn() {
+    echo "$1" # arguments are accessible through $1, $2,...
+}
+
+function init_lunarvim() {
+    echo "$1" # arguments are accessible through $1, $2,...
+}
+
 function init_gptnextweb() {
     echo "=> 正在配置ChatGPT NetWeb"
 }
 
-# 流程
-#   1. 换源, 更新
-#   2. 下载配置 clash
-#   3. 下载配置 ZSH
-#   4. 下载配置 tmux
-#   5. 下载配置 frp
+# TODO: 增加dialog menu菜单
+# 主循环
+while true; do
+    # 使用dialog创建菜单
+    choice=$(dialog --menu "选择一个选项：" 30 50 5 \
+        1 "换源USTC" \
+        2 "配置Clash" \
+        3 "配置ZSH" \
+        4 "配置TMUX" \
+        5 "配置FRP" \
+        6 "配置NodeJS" \
+        7 "退出" 2>&1 >/dev/tty)
+    clear
+    # 根据用户的选择执行相应的操作
+    case $choice in
+    1)
+        change_source
+        ;;
+    2)
+        init_clash
+        ;;
+    3)
+        init_zsh
+        ;;
+    4)
+        init_tmux
+        ;;
+    5)
+        init_frp
+        ;;
+    6)
+        init_nodejs
+        ;;
+    7)
+        break # 退出循环，结束应用
+        ;;
+    *)
+        echo "无效的选项"
+        ;;
+    esac
 
-#change_source
-init_clash
-#init_zsh
-#init_tmux
-#init_frp
-#init_nodejs
+done
+
+echo "Have a good day and enjoy your Ubuntu :)"
