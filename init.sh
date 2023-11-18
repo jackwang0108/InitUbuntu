@@ -161,7 +161,6 @@ function init_clash() {
     attempt=1
     if ! (wget -e http_proxy=127.0.0.1:7890 -e https_proxy=127.0.0.1:7890 -P ~/opt/clash -c https://github.com/haishanh/yacd/releases/download/v0.3.7/yacd.tar.xz); then
         attempt+=1
-        rm ~/opt/clash/yacd.tar.xz
     fi
     if [[ $attempt -gt 5 ]]; then
         echo "yacd下载失败"
@@ -177,6 +176,19 @@ function init_clash() {
     echo "${password}" | sudo systemctl restart clash.service
     echo "浏览器访问 http://localhost:9090/ui 或 http://$(curl ifconfig.me)/ui 以登录dashboard"
     echo "用户名为主机地址:9090, 密码默认123456"
+}
+
+function init_qv2ray() {
+    echo "=> 正在配置Qv2ray"
+    mkdir -p ~/opt/qv2ray/v2ray
+    # 下载qv2ray
+    git clone https://gitee.com/jackwangsh/newnew.git ~/opt/qv2ray && rm -rf ~/opt/v2ray/.git
+    chmod +x ~/opt/qv2ray/Qv2ray-v2.7.0-linux-x64.AppImage
+    unzip -d ~/opt/qv2ray/v2ray ~/opt/qv2ray/new.zip
+    mkdir -p ~/.config/qv2ray/plugins
+    cp ~/opt/qv2ray/QvPlugin-* ~/.config/qv2ray/plugins
+    # 配置libfuse2
+    echo "${password}" | sudo -S apt install libfuse2
 }
 
 function zsh_plugin() {
@@ -217,6 +229,7 @@ function init_zsh() {
     git clone --depth=1 https://github.com/romkatv/powerlevel10k.git "${ZSH_CUSTOM:-$HOME/.oh-my-zsh/custom}/themes/powerlevel10k"
     sed -i 's/ZSH_THEME=.*/ZSH_THEME="powerlevel10k\/powerlevel10k"/' ~/.zshrc
     echo "\
+
 # To customize prompt, run \$(p10k configure) or edit ~/.p10k.zsh.
 [[ ! -f ~/.p10k.zsh ]] || source ~/.p10k.zsh
 " >>~/.zshrc
@@ -261,7 +274,13 @@ function init_tmux() {
 }
 
 function init_vim() {
-    echo
+    echo "=> 正在配置VIM"
+    # 首先复制默认vim设置
+    cp "${dir}"/.vimrc ~/
+    # 创建分区
+    mkdir -p ~/.vim/.backup
+    mkdir -p ~/.vim/.swp
+    mkdir -p ~/.vim/.undo
 }
 
 function init_frp() {
@@ -312,12 +331,27 @@ function init_nodejs() {
     ln -s ~/opt/nodejs/node-v20.9.0-linux-x64/lib ~/opt/nodejs/lib
     ln -s ~/opt/nodejs/node-v20.9.0-linux-x64/share ~/opt/nodejs/share
 
-    # shellcheck disable=SC2016
-    echo 'export PATH=/home/jack/opt/nodejs/node-v20.9.0-linux-x64/bin:${PATH}' >>~/.zshrc
+    if ! grep -q "nodejs" ~/.zshrc; then
+        # shellcheck disable=SC2016
+        echo '
+# NodeJS, NPM
+export PATH=/home/jack/opt/nodejs/node-v20.9.0-linux-x64/bin:${PATH}' >>~/.zshrc
+    fi
+}
+
+function init_nginx() {
+    echo "=> 正在配置Nginx"
+
 }
 
 function init_rust() {
-    echo "$1" # arguments are accessible through $1, $2,...
+    echo "=> 正在配置Rust" # arguments are accessible through $1, $2,...
+    HTTP_PROXY="http://127.0.0.1:7890" HTTPS_PROXY="http://127.0.0.1:7890" ALL_PROXY="socks5://127.0.0.1:7890" curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
+    # shellcheck disable=SC2016
+    echo '
+# rust
+export PATH="$HOME/.cargo/bin:${PATH}"
+    ' >>~/.zshrc
 }
 
 function init_yarn() {
@@ -325,48 +359,102 @@ function init_yarn() {
 }
 
 function init_lunarvim() {
-    echo "$1" # arguments are accessible through $1, $2,...
+    echo "=> 正在配置LunarVim"
+    # 首先配置VIM
+    init_vim
+    # 先安装依赖neovim
+    mkdir -p ~/opt/neovim
+    wget -e http_proxy=127.0.0.1:7890 -e https_proxy=127.0.0.1:7890 -c -P ~/opt/neovim https://github.com/neovim/neovim/releases/download/v0.9.4/nvim-linux64.tar.gz
+    tar xzvf ~/opt/neovim/nvim-linux64.tar.gz -C ~/opt/neovim/
+    mv ~/opt/neovim/nvim-linux64 ~/opt/neovim/nvim-linux64-9.4.0
+    ln -s ~/opt/neovim/nvim-linux64-9.4.0/bin ~/opt/neovim/bin
+    ln -s ~/opt/neovim/nvim-linux64-9.4.0/lib ~/opt/neovim/lib
+    ln -s ~/opt/neovim/nvim-linux64-9.4.0/man ~/opt/neovim/man
+    ln -s ~/opt/neovim/nvim-linux64-9.4.0/share ~/opt/neovim/share
+    if ! (grep -q "neovim" ~/.zshrc); then
+        # shellcheck disable=SC2016
+        echo '
+# NeoVIM
+export PATH=/home/jack/opt/neovim/bin:${PATH}' >>~/.zshrc
+    fi
+    export PATH=/home/jack/opt/neovim/bin:${PATH}
+    # 安装 lunarvim
+    echo "${password}" | sudo -S apt install python-is-python3 python3-pip
+    LV_BRANCH='release-1.3/neovim-0.9' bash <(curl -s https://raw.githubusercontent.com/LunarVim/LunarVim/release-1.3/neovim-0.9/utils/installer/install.sh)
+    export PATH=${HOME}/.local/bin
+    if ! (grep -q "lvim" ~/.zshrc); then
+        # shellcheck disable=SC2016
+        echo '
+# LunarVIM
+export PATH=${HOME}/.local/bin:$PATH
+~/.local/bin
+' >>~/.zshrc
+    fi
+    # 安装字体
+    git clone https://github.com/ronniedroid/getnf.git
+    bash getnf/install.sh
+    bash getnf/getnf.sh
+    # 卸载lunarvim
+    # bash ~/.local/share/lunarvim/lvim/utils/installer/uninstall.sh
 }
 
 function init_gptnextweb() {
     echo "=> 正在配置ChatGPT NetWeb"
 }
 
-# TODO: 增加dialog menu菜单
 # 主循环
 while true; do
     # 使用dialog创建菜单
-    choice=$(dialog --menu "选择一个选项：" 30 50 5 \
-        1 "换源USTC" \
-        2 "配置Clash" \
-        3 "配置ZSH" \
-        4 "配置TMUX" \
-        5 "配置FRP" \
-        6 "配置NodeJS" \
-        7 "退出" 2>&1 >/dev/tty)
+    choice=$(
+        dialog --menu "选择一个选项：" 30 50 5 \
+            1 "退出" \
+            2 "换源USTC" \
+            3 "配置Clash" \
+            4 "配置Qv2ray" \
+            5 "配置ZSH" \
+            6 "配置TMUX" \
+            7 "配置FRP" \
+            8 "配置NodeJS" \
+            9 "配置Rust" \
+            10 "配置VIM" \
+            11 "配置LunarVIM" \
+            2>&1 >/dev/tty
+    )
     clear
     # 根据用户的选择执行相应的操作
     case $choice in
     1)
-        change_source
+        break # 退出循环，结束应用
         ;;
     2)
-        init_clash
+        change_source
         ;;
     3)
-        init_zsh
+        init_clash
         ;;
     4)
-        init_tmux
+        init_qv2ray
         ;;
     5)
-        init_frp
+        init_zsh
         ;;
     6)
-        init_nodejs
+        init_tmux
         ;;
     7)
-        break # 退出循环，结束应用
+        init_frp
+        ;;
+    8)
+        init_nodejs
+        ;;
+    9)
+        init_rust
+        ;;
+    10)
+        init_vim
+        ;;
+    11)
+        init_lunarvim
         ;;
     *)
         echo "无效的选项"
@@ -375,4 +463,5 @@ while true; do
 
 done
 
+echo "Don't forget to source your ~/.zshrc to make everthing effective"
 echo "Have a good day and enjoy your Ubuntu :)"
