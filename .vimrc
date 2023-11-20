@@ -104,3 +104,8 @@ set list
 set wildmenu
 set wildmode=longest:list,full
 
+
+
+" ================= 编辑配置 =================
+" jj映射为Esc
+inoremap jj <ESC>
