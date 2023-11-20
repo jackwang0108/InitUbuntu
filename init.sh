@@ -285,6 +285,11 @@ function init_vim() {
     echo '
 export EDITOR=vim
 '
+    # 设置root使用的vim
+    echo "${password}" | sudo -S cp "${dir}"/.vimrc /root
+    echo "${password}" | sudo -S mkdir -p root/.vim/.backup
+    echo "${password}" | sudo -S mkdir -p root/.vim/.swp
+    echo "${password}" | sudo -S mkdir -p root/.vim/.undo
 }
 
 function init_frp() {
@@ -327,6 +332,7 @@ function init_frp() {
 
 function init_nodejs() {
     echo "=> 正在配置NodeJS"
+    # 用户的NodeJS安装在~/opt下
     mkdir ~/opt/nodejs/
     wget -e http_proxy=127.0.0.1:7890 -e https_proxy=127.0.0.1:7890 -c -P ~/opt/nodejs https://nodejs.org/dist/v20.9.0/node-v20.9.0-linux-x64.tar.xz
     tar xJvf ~/opt/nodejs/node-v20.9.0-linux-x64.tar.xz -C ~/opt/nodejs
@@ -341,6 +347,16 @@ function init_nodejs() {
 # NodeJS, NPM
 export PATH=/home/jack/opt/nodejs/node-v20.9.0-linux-x64/bin:${PATH}' >>~/.zshrc
     fi
+
+    # root的NodeJS需要重新配置源
+    echo "${password}" | sudo -S apt install -y ca-certificates curl gnupg
+    echo "${password}" | sudo -S mkdir -p /etc/apt/keyrings
+    curl -fsSL https://deb.nodesource.com/gpgkey/nodesource-repo.gpg.key | sudo gpg --dearmor -o /etc/apt/keyrings/nodesource.gpg
+    # 安装最新的NodeJS版本为20
+    NODE_MAJOR=20
+    echo "deb [signed-by=/etc/apt/keyrings/nodesource.gpg] https://deb.nodesource.com/node_$NODE_MAJOR.x nodistro main" | sudo tee /etc/apt/sources.list.d/nodesource.list
+    echo "${password}" sudo apt-get update
+    echo "${password}" sudo apt-get install nodejs -y
 }
 
 function init_nginx() {
@@ -359,7 +375,8 @@ export PATH="$HOME/.cargo/bin:${PATH}"
 }
 
 function init_yarn() {
-    echo "$1" # arguments are accessible through $1, $2,...
+    echo "=> 正在配置Yarn"
+    npm install --global yarn
 }
 
 function init_lunarvim() {
@@ -422,8 +439,37 @@ alias vim="lvim"
     cp config.lua ~/.config/lvim
 }
 
+function init_ssh() {
+    echo "=> 正在配置SSH"
+}
+
 function init_gptnextweb() {
     echo "=> 正在配置ChatGPT NetWeb"
+    input=""
+    while [[ "$input" != "w" && "$input" != "a" ]]; do
+        read -p "配置网页版/桌面应用版[w/a]: " -r input
+    done
+    if [[ $input == "w" ]]; then
+        echo "=> 正在配置网页版ChatGPT"
+        init_yarn
+        git clone https://github.com/Yidadaa/ChatGPT-Next-Web.git ~/opt/ChatGPT-Next-Web
+        # 安装yarn依赖
+        cd ~/opt/ChatGPT-Next-Web && $(which yarn) install
+        # 发布网页应用
+        read -p "请输入OPENAI_API_KEY: " -r OPENAI_API_KEY
+        read -p "请输入访问密码: " -r CODE
+        read -p "请输入启动端口: " -r PORT
+        OPENAI_API_KEY=$OPENAI_API_KEY CODE=$CODE PORT=$PORT $(which yarn) build
+        cd "${dir}" || return
+        # 配置开机自启动
+        echo "${password}" | sudo -S cp "${dir}"/ChatGPT.service /etc/systemd/system/ChatGPT.service
+        echo "${password}" | sudo -S systemctl daemon-reload
+        echo "${password}" | sudo -S systemctl enable ChatGPT.service
+        echo "${password}" | sudo -S systemctl start ChatGPT.service
+    elif [[ $input == 'a' ]]; then
+        # TODO: 完成桌面应用版本ChatGPT
+        echo "=> 暂时未实现"
+    fi
 }
 
 # 主循环
