@@ -281,6 +281,10 @@ function init_vim() {
     mkdir -p ~/.vim/.backup
     mkdir -p ~/.vim/.swp
     mkdir -p ~/.vim/.undo
+    # 设置默认编辑器为VIM
+    echo '
+export EDITOR=vim
+'
 }
 
 function init_frp() {
@@ -387,7 +391,8 @@ export PATH=/home/jack/opt/neovim/bin:${PATH}' >>~/.zshrc
         echo '
 # LunarVIM
 export PATH=${HOME}/.local/bin:$PATH
-~/.local/bin
+export EDITOR=lvim
+alias vim="lvim"
 ' >>~/.zshrc
     fi
     # 安装字体
@@ -396,6 +401,25 @@ export PATH=${HOME}/.local/bin:$PATH
     bash getnf/getnf.sh
     # 卸载lunarvim
     # bash ~/.local/share/lunarvim/lvim/utils/installer/uninstall.sh
+
+    # TODO: 添加LunarVIM的配置, ~/.config/lvim/config.lua
+    # 安装Lua静态检查工具
+    echo "${password}" | sudo -S apt install -y luarocks
+    echo "${password}" | sudo -S luarocks install luacheck
+    # 安装Lua格式化工具
+    cargo install stylua
+    # 安装shell检查工具
+    echo "${password}" | sudo apt install -y shellcheck
+    # 安装typescript格式化工具
+    npm install -g prettier
+    # 安装python检查工具
+    echo "${password}" | sudo apt install -y flake8
+    # 安装python格式化工具
+    echo "${password}" | sudo -S apt install -y python3-pip python-is-python3
+    python -m pip install black
+    # 安装C/C++格式化工具
+    python -m pip install cpplint
+    cp config.lua ~/.config/lvim
 }
 
 function init_gptnextweb() {
