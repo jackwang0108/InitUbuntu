@@ -519,7 +519,7 @@ dialog --title "系统信息" --msgbox "$lsb_info" 20 60
 while true; do
     # 使用dialog创建菜单
     choice=$(
-        dialog --menu "选择一个选项：" 30 50 5 \
+        dialog --menu "选择一个选项：" 30 50 20 \
             1 "退出" \
             2 "换源USTC" \
             3 "配置Clash" \
@@ -538,7 +538,7 @@ while true; do
     clear
     # 根据用户的选择执行相应的操作
     case $choice in
-    1)
+    1 | 255)
         break # 退出循环，结束应用
         ;;
     2)
