@@ -3,12 +3,15 @@
 # 获取密码
 read -p "请输入用户密码: " -r -s password && echo ""
 # 测试是否为sudo用户
-if echo "${password}" | sudo -S true 2>/dev/null; then
+if echo "${password}" | sudo -S -n true 2>/dev/null; then
     echo ""
 else
     echo "当前用户非SUDO用户"
     exit 1
 fi
+
+# 安装必要工具
+echo "${password}" | sudo -S apt install curl dialog
 
 # 脚本目录
 dir=$(dirname "$(readlink -f "$0")")
@@ -46,9 +49,6 @@ deb https://mirrors.ustc.edu.cn/ubuntu/ ${code_name}-security main restricted un
     # 更新
     echo "${password}" | sudo -S apt update
     echo "${password}" | sudo -S apt upgrade -y
-
-    # 安装必要工具
-    echo "${password}" | sudo -S apt install curl dialog
 }
 
 function dialog_input() {
@@ -402,7 +402,6 @@ alias vim="lvim"
     # 卸载lunarvim
     # bash ~/.local/share/lunarvim/lvim/utils/installer/uninstall.sh
 
-    # TODO: 添加LunarVIM的配置, ~/.config/lvim/config.lua
     # 安装Lua静态检查工具
     echo "${password}" | sudo -S apt install -y luarocks
     echo "${password}" | sudo -S luarocks install luacheck
@@ -424,9 +423,40 @@ alias vim="lvim"
 
 function init_gptnextweb() {
     echo "=> 正在配置ChatGPT NetWeb"
+    # 需要安装全局的nodejs, 需要给全局的nodejs添加源
+}
+
+function init_qemu() {
+    echo "=> 正在配置QEMU"
+    echo "${password}" | sudo -S apt install -y autoconf automake autotools-dev curl libmpc-dev libmpfr-dev libgmp-dev gawk build-essential bison flex texinfo gperf libtool patchutils bc zlib1g-dev libexpat-dev git libglib2.0-dev libfdt-dev libpixman-1-dev libncurses5-dev libncursesw5-dev
+    mkdir -p ~/opt/qemu
+    wget -c -P ~/opt/qemu https://download.qemu.org/qemu-7.2.0.tar.xz
+    tar xvJf qemu-7.2.0.tar.xz -C ~/opt/qemu
+    cd ~/opt/qemu/qemu-7.2.0 && export PREFIX="${HOME}/opt/qemu"
+    cd ~/opt/qemu/qemu-7.2.0 && ./configure --prefix="${PREFIX}" --target-list=riscv64-softmmu,riscv64-linux-user
+    make -j$(($(nproc) - 2))
+    make install
+    # shellcheck disable=SC2016
+    printf 'PATH=$PATH:%s' "${PREFIX}"/bin >>~/.zshrc
+}
+
+function init_riscvtools() {
+    echo "=> 正在配置RISCV-Tools"
+    mkdir -p ~/opt/riscv-tools
+    git clone https://github.com/riscv-collab/riscv-gnu-toolchain.git ~/opt/riscv-tools/src
+    cd ~/opt/riscv-tools/src && git submodule init
+    cd ~/opt/riscv-tools/src && git -c submodule.qemu.update=none submodule update --recursive --progress
+    echo "${password}" | sudo -S apt install -y autoconf automake autotools-dev curl python3 libmpc-dev libmpfr-dev libgmp-dev gawk build-essential bison flex texinfo gperf libtool patchutils bc zlib1g-dev libexpat-dev ninja-build
+    export PREFIX="${HOME}/opt/riscv-tools"
+    cd ~/opt/riscv-tools/src && ./configure --prefix="${PREFIX}" --enable-gdb --enable-gcc-checkin
+    make -j$(($(nproc) - 2))
+    # shellcheck disable=SC2016
+    printf 'PATH=$PATH:%s' "${PREFIX}"/bin >>~/.zshrc
+    echo "${password}" | sudo -S apt install -y gdb-multiarch
 }
 
 # 主循环
+# TODO: 自动扫描代理端口, 或者用户手动添加代理地址
 while true; do
     # 使用dialog创建菜单
     choice=$(
@@ -442,6 +472,8 @@ while true; do
             9 "配置Rust" \
             10 "配置VIM" \
             11 "配置LunarVIM" \
+            12 "配置QEMU" \
+            13 "配置RISCV-Tools" \
             2>&1 >/dev/tty
     )
     clear
@@ -479,6 +511,12 @@ while true; do
         ;;
     11)
         init_lunarvim
+        ;;
+    12)
+        init_qemu
+        ;;
+    13)
+        init_riscvtools
         ;;
     *)
         echo "无效的选项"
