@@ -14,12 +14,26 @@ if sudo -n true 2>/dev/null; then
     echo "${password}" | sudo -S apt install curl wget
 else
     # 使用dialog工具显示消息框
-    dialog --title "警告" --msgbox "当前用户非SUDO用户，该工具仅能以SUDO用户运行！" 10 30
+    dialog --title "警告" --msgbox "当前用户非SUDO用户，该工具仅能以SUDO用户运行！" 10 50
     exit 1
 fi
 
 # 脚本目录
 dir=$(dirname "$(readlink -f "$0")")
+# 配置文件
+temp_file="${dir}"/tempfile
+config_file="${dir}"/config.cfg
+if [ ! -f "$config_file" ]; then
+    # 使用dialog创建输入框，并将结果保存在临时文件中
+    dialog --inputbox "请输入代理端口:" 10 30 2>"${temp_file}"
+    proxy_port=$(<"${temp_file}")
+    echo "proxy_port=${proxy_port}" >"${config_file}"
+    rm "${temp_file}"
+else
+    # shellcheck source=/dev/null
+    source "${config_file}"
+    dialog --title "通知" --msgbox "正在使用${proxy_port}作为代理端口\n编辑${config_file}以修改端口" 10 50
+fi
 
 function change_source() {
     echo "=> 正在换源"
@@ -53,15 +67,6 @@ deb https://mirrors.ustc.edu.cn/ubuntu/ ${code_name}-security main restricted un
     echo "${password}" | sudo -S apt upgrade -y
 }
 
-function dialog_input() {
-    msg=$1
-    filename=$2
-    height=$3
-    width=$4
-    dialog --inputbox "${msg}" "${height}" "${width}" 2>"${filename}"
-    clear
-}
-
 function add_function() {
     file=$1
     echo "添加proxy_on和proxy_off到$file"中
@@ -70,12 +75,12 @@ function add_function() {
         echo "
 function proxy_on() {
     echo '命令行代理已开启'
-    export HTTP_PROXY=http://127.0.0.1:7890
-    export HTTPS_PROXY=http://127.0.0.1:7890
-    export ALL_PROXY=socks://127.0.0.1:7890
-    git config --global https.proxy http://127.0.0.1:7890
-    git config --global https.proxy https://127.0.0.1:7890
-    alias wget="wget -e http_proxy=127.0.0.1:7890 -e https_proxy=127.0.0.1:7890"
+    export HTTP_PROXY=http://127.0.0.1:${proxy_port}
+    export HTTPS_PROXY=http://127.0.0.1:${proxy_port}
+    export ALL_PROXY=socks://127.0.0.1:${proxy_port}
+    git config --global https.proxy http://127.0.0.1:${proxy_port}
+    git config --global https.proxy https://127.0.0.1:${proxy_port}
+    alias wget=\"wget -e http_proxy=127.0.0.1:${proxy_port} -e https_proxy=127.0.0.1:${proxy_port}\"
 }
 " >>"${file}"
     fi
@@ -98,22 +103,24 @@ function proxy_off() {
 function init_clash() {
     echo "=> 正在配置clash"
     # 下载clash
-    if [[ ! -e ~/opt/clash/clash ]]; then
+    clash_home="$HOME"/opt/clash
+    mkdir -p "$clash_home"
+    if [[ ! -f ~/opt/clash/clash ]]; then
         [[ ! -d new ]] && git clone https://gitee.com/jackwangsh/new.git
         gzip -d new/hello.gz
         gzip -d new/GeoLite2-Country.mmdb.gz
-        mkdir -p ~/opt/clash && mv new/* ~/opt/clash && rm -rf new
-        mv ~/opt/clash/hello ~/opt/clash/clash
-        mv ~/opt/clash/GeoLite2-Country.mmdb ~/opt/clash/Country.mmdb
-        chmod +x ~/opt/clash/clash
+        mv new/* "$clash_home" && rm -rf new
+        mv "$clash_home"/hello "$clash_home"/clash
+        mv "$clash_home"/GeoLite2-Country.mmdb "$clash_home"/Country.mmdb
+        chmod +x "$clash_home"/clash
     fi
     # 更新订阅链接
-    if [[ ! -e ~/opt/clash/config.yaml ]]; then
+    if [[ ! -e "$clash_home"/config.yaml ]]; then
         # read -p "请输入Clash订阅链接: " -r subscription && echo ""
         cs_file="$dir"/clash_subscription.txt
-        dialog_input "请输入Clash订阅链接: " "${cs_file}" 10 100
+        dialog --inputbox "请输入Clash订阅链接" 10 100 2>"${dir}/clash_subscription.txt" && clear
         subscription=$(cat "${cs_file}")
-        wget -c "${subscription}" -O ~/opt/clash/config.yaml
+        wget -c "${subscription}" -O "$clash_home"/config.yaml
         # 修改配置信息
         sed -i -e '/^port:/s/^/#/' \
             -e '/^socks-port:/s/^/#/' \
@@ -124,9 +131,9 @@ function init_clash() {
     fi
 
     # 测试
-    ~/opt/clash/clash -d ~/opt/clash &
+    "$clash_home"/clash -d "$clash_home" &
     sleep 5
-    if HTTP_PROXY="http://127.0.0.1:7890" HTTPS_PROXY="http://127.0.0.1:7890" ALL_PROXY="socks5://127.0.0.1:7890" curl -# www.google.com >/dev/null; then
+    if HTTP_PROXY="http://127.0.0.1:${proxy_port}" HTTPS_PROXY="http://127.0.0.1:${proxy_port}" ALL_PROXY="socks5://127.0.0.1:${proxy_port}" curl -# www.google.com >/dev/null; then
         echo "clash配置成功!"
     else
         echo "clash配置失败!"
@@ -148,7 +155,7 @@ function init_clash() {
         echo "clash开机自启动配置失败"
     fi
     sleep 3
-    if HTTP_PROXY="http://127.0.0.1:7890" HTTPS_PROXY="http://127.0.0.1:7890" ALL_PROXY="socks5://127.0.0.1:7890" curl -# www.google.com >/dev/null; then
+    if HTTP_PROXY="http://127.0.0.1:${proxy_port}" HTTPS_PROXY="http://127.0.0.1:${proxy_port}" ALL_PROXY="socks5://127.0.0.1:${proxy_port}" curl -# www.google.com >/dev/null; then
         echo "clash已成功在后台运行"
     else
         echo "clash未成功在后台运行"
@@ -161,19 +168,19 @@ function init_clash() {
     echo "配置Clash Dashboard"
     echo "由于DNS污染问题, 可能需要等待较长的一段时间"
     attempt=1
-    if ! (wget -e http_proxy=127.0.0.1:7890 -e https_proxy=127.0.0.1:7890 -P ~/opt/clash -c https://github.com/haishanh/yacd/releases/download/v0.3.7/yacd.tar.xz); then
+    if ! (wget -e "http_proxy=127.0.0.1:${proxy_port}" -e "https_proxy=127.0.0.1:${proxy_port}" -P "$clash_home" -c https://github.com/haishanh/yacd/releases/download/v0.3.7/yacd.tar.xz); then
         attempt+=1
     fi
     if [[ $attempt -gt 5 ]]; then
         echo "yacd下载失败"
     fi
-    if [[ -e ~/opt/clash/yacd.tar.xz ]]; then
-        tar -xJf ~/opt/clash/yacd.tar.xz -C ~/opt/clash
-        mv ~/opt/clash/public ~/opt/clash/dashboard
+    if [[ -e $clash_home/yacd.tar.xz ]]; then
+        tar -xJf "$clash_home"/yacd.tar.xz -C "$clash_home"
+        mv "$clash_home"/public "$clash_home"/dashboard
     fi
     sed -i -e "s/^secret:.*/secret: '123456'/" \
         -e "/^secret:.*/a external-ui: dashboard" \
-        ~/opt/clash/config.yaml
+        "$clash_home"/config.yaml
     # 重启 clash 服务
     echo "${password}" | sudo systemctl restart clash.service
     echo "浏览器访问 http://localhost:9090/ui 或 http://$(curl ifconfig.me)/ui 以登录dashboard"
