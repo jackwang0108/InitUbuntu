@@ -1,23 +1,25 @@
 #!/bin/bash
 
-# 获取密码
-read -p "请输入用户密码: " -r -s password && echo ""
-# 测试是否为sudo用户
-if echo "${password}" | sudo -S -n true 2>/dev/null; then
-    echo ""
-else
-    echo "当前用户非SUDO用户"
+# 检查dialog工具是否已安装
+if ! command -v dialog &>/dev/null; then
+    echo "dialog工具未安装，请先安装，运行sudo apt install dialog -y以安装"
     exit 1
 fi
 
-# 安装必要工具
-echo "${password}" | sudo -S apt install curl dialog
+# 检查用户是否具有sudo权限
+if sudo -n true 2>/dev/null; then
+    echo "当前用户是SUDO用户"
+    password=$(dialog --title "输入密码" --clear --passwordbox "请输入你的密码" 10 30 2>&1 >/dev/tty)
+    clear && echo "=> 正在安装必要工具"
+    echo "${password}" | sudo -S apt install curl wget
+else
+    # 使用dialog工具显示消息框
+    dialog --title "警告" --msgbox "当前用户非SUDO用户，该工具仅能以SUDO用户运行！" 10 30
+    exit 1
+fi
 
 # 脚本目录
 dir=$(dirname "$(readlink -f "$0")")
-
-# 展示系统信息
-lsb_release -idcr && echo ""
 
 function change_source() {
     echo "=> 正在换源"
@@ -500,6 +502,10 @@ function init_riscvtools() {
     printf 'PATH=$PATH:%s' "${PREFIX}"/bin >>~/.zshrc
     echo "${password}" | sudo -S apt install -y gdb-multiarch
 }
+
+# 展示系统信息
+lsb_info=$(lsb_release -idcr 2>/dev/null)
+dialog --title "系统信息" --msgbox "$lsb_info" 20 60
 
 # 主循环
 # TODO: 自动扫描代理端口, 或者用户手动添加代理地址
