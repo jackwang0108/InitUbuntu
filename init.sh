@@ -444,7 +444,7 @@ function init_ssh() {
 
 function init_gptnextweb() {
     echo "=> 正在配置ChatGPT NetWeb"
-    # 需要安装全局的nodejs, 需要给全局的nodejs添加源
+    # 需要安装全局的nodejs, 需要给全局的nodejs添加源, 在init_nodejs中完成
     input=""
     while [[ "$input" != "w" && "$input" != "a" ]]; do
         read -p "配置网页版/桌面应用版[w/a]: " -r input
