@@ -492,7 +492,7 @@ function init_qemu() {
     make -j$(($(nproc) - 2))
     make install
     # shellcheck disable=SC2016
-    printf 'PATH=$PATH:%s' "${PREFIX}"/bin >>~/.zshrc
+    printf 'export PATH=%s:"${PATH}"' "${PREFIX}"/bin >>~/.zshrc
 }
 
 function init_riscvtools() {
@@ -505,9 +505,9 @@ function init_riscvtools() {
     export PREFIX="${HOME}/opt/riscv-tools"
     cd ~/opt/riscv-tools/src && ./configure --prefix="${PREFIX}" --enable-gdb --enable-gcc-checkin
     make -j$(($(nproc) - 2))
-    # shellcheck disable=SC2016
-    printf 'PATH=$PATH:%s' "${PREFIX}"/bin >>~/.zshrc
     echo "${password}" | sudo -S apt install -y gdb-multiarch
+    # shellcheck disable=SC2016
+    printf 'export PATH=%s:"${PATH}"' "${PREFIX}"/bin >>~/.zshrc
 }
 
 # 展示系统信息
