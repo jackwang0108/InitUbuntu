@@ -571,6 +571,30 @@ function init_miniconda() {
     "${HOME}"/miniconda3/bin/conda init "${shell}"
 }
 
+function init_bottom() {
+    echo "=> 正在配置Bottom"
+    export HTTP_PROXY=127.0.0.1:${proxy_port} HTTPS_PROXY=127.0.0.1:${proxy_port} ALL_PROXY=127.0.0.1:${proxy_port}
+    rustup update stable
+    cargo install bottom --locked
+}
+
+function init_glances() {
+    echo "=> 正在配置Glances"
+    python -m pip install --user 'glances[all]' -i https://pypi.tuna.tsinghua.edu.cn/simple
+    cp "${dir}"/glances.service "${dir}"/glances.service.backup
+    sed -i "s,#USERHOME,$HOME,g" glances.service
+    cp "${dir}"/glances.sh "${dir}"/glances.sh.backup
+    read -p "请输入登录用户名: " -r username
+    read -p "请输入登录密码: " -r password
+    sed -i "s,#GLANCES,$(which glances),g" glances.sh
+    sed -i "s,#USER,${username},g" glances.sh
+    sed -i "s,#PASS,${password},g" glances.sh
+    echo "${password}" | sudo -S cp "${dir}"/glances.service /etc/systemd/system
+    echo "${password}" | sudo -S systemctl daemon-reload
+    echo "${password}" | sudo -S systemctl enable glances.service
+    echo "${password}" | sudo -S systemctl start glances.service
+}
+
 function init_typora() {
     echo "=> 正在配置Typora"
 }
@@ -599,6 +623,8 @@ while true; do
             12 "配置QEMU" \
             13 "配置RISCV-Tools" \
             14 "配置Miniconda" \
+            15 "配置Bottom" \
+            16 "配置Glances" \
             2>&1 >/dev/tty
     )
     clear
@@ -645,6 +671,12 @@ while true; do
         ;;
     14)
         init_miniconda
+        ;;
+    15)
+        init_bottom
+        ;;
+    16)
+        init_glances
         ;;
     *)
         echo "无效的选项"
