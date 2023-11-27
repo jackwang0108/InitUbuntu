@@ -7,7 +7,7 @@ if ! command -v dialog &>/dev/null; then
 fi
 
 # 检查用户是否具有sudo权限
-if sudo -n true 2>/dev/null; then
+if sudo -l 2>/dev/null; then
     echo "当前用户是SUDO用户"
     password=$(dialog --title "输入密码" --clear --passwordbox "请输入你的密码" 10 30 2>&1 >/dev/tty)
     clear && echo "=> 正在安装必要工具"
@@ -98,6 +98,24 @@ function proxy_off() {
 }
 " >>"${file}"
     fi
+}
+
+function choose_shell() {
+    msg=$1
+    choice=$(
+        dialog --title "${msg}" --menu "请选择一个Shell：" 10 40 2 \
+            1 "zsh" \
+            2 "bash" \
+            2>&1 >/dev/tty
+    )
+    case $choice in
+    1)
+        echo "zsh"
+        ;;
+    2)
+        echo "bash"
+        ;;
+    esac
 }
 
 function init_clash() {
@@ -350,11 +368,17 @@ function init_nodejs() {
     ln -s ~/opt/nodejs/node-v20.9.0-linux-x64/lib ~/opt/nodejs/lib
     ln -s ~/opt/nodejs/node-v20.9.0-linux-x64/share ~/opt/nodejs/share
 
-    if ! grep -q "nodejs" ~/.zshrc; then
+    shell=$(choose_shell "选择初始化NodeJS的Shell")
+    if [[ "$shell" == "bash" ]]; then
+        file=~/.bashrc
+    else
+        file=~/.zshrc
+    fi
+    if ! grep -q "nodejs" "${file}"; then
         # shellcheck disable=SC2016
         echo '
 # NodeJS, NPM
-export PATH=/home/jack/opt/nodejs/node-v20.9.0-linux-x64/bin:${PATH}' >>~/.zshrc
+export PATH=/home/jack/opt/nodejs/node-v20.9.0-linux-x64/bin:${PATH}' >>"${file}"
     fi
 
     # root的NodeJS需要重新配置源
@@ -376,11 +400,18 @@ function init_nginx() {
 function init_rust() {
     echo "=> 正在配置Rust" # arguments are accessible through $1, $2,...
     HTTP_PROXY="http://127.0.0.1:7890" HTTPS_PROXY="http://127.0.0.1:7890" ALL_PROXY="socks5://127.0.0.1:7890" curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
+
+    shell=$(choose_shell "选择初始化Rust的Shell")
+    if [[ "$shell" == "bash" ]]; then
+        file=~/.bashrc
+    else
+        file=~/.zshrc
+    fi
     # shellcheck disable=SC2016
     echo '
 # rust
 export PATH="$HOME/.cargo/bin:${PATH}"
-    ' >>~/.zshrc
+    ' >>"${file}"
 }
 
 function init_yarn() {
@@ -401,25 +432,31 @@ function init_lunarvim() {
     ln -s ~/opt/neovim/nvim-linux64-9.4.0/lib ~/opt/neovim/lib
     ln -s ~/opt/neovim/nvim-linux64-9.4.0/man ~/opt/neovim/man
     ln -s ~/opt/neovim/nvim-linux64-9.4.0/share ~/opt/neovim/share
-    if ! (grep -q "neovim" ~/.zshrc); then
+    shell=$(choose_shell "选择初始化NeoVIM的Shell")
+    if [[ "$shell" == "bash" ]]; then
+        rc=~/.bashrc
+    else
+        rc=~/.zshrc
+    fi
+    if ! (grep -q "neovim" "${rc}"); then
         # shellcheck disable=SC2016
         echo '
 # NeoVIM
-export PATH=/home/jack/opt/neovim/bin:${PATH}' >>~/.zshrc
+export PATH=/home/jack/opt/neovim/bin:${PATH}' >>"${rc}"
     fi
     export PATH=/home/jack/opt/neovim/bin:${PATH}
     # 安装 lunarvim
     echo "${password}" | sudo -S apt install python-is-python3 python3-pip
     LV_BRANCH='release-1.3/neovim-0.9' bash <(curl -s https://raw.githubusercontent.com/LunarVim/LunarVim/release-1.3/neovim-0.9/utils/installer/install.sh)
     export PATH=${HOME}/.local/bin
-    if ! (grep -q "lvim" ~/.zshrc); then
+    if ! (grep -q "lvim" "${rc}"); then
         # shellcheck disable=SC2016
         echo '
 # LunarVIM
 export PATH=${HOME}/.local/bin:$PATH
 export EDITOR=lvim
 alias vim="lvim"
-' >>~/.zshrc
+' >>"${rc}"
     fi
     # 安装字体
     git clone https://github.com/ronniedroid/getnf.git
@@ -491,8 +528,14 @@ function init_qemu() {
     cd ~/opt/qemu/qemu-7.2.0 && ./configure --prefix="${PREFIX}" --target-list=riscv64-softmmu,riscv64-linux-user
     make -j$(($(nproc) - 2))
     make install
+    shell=$(choose_shell "选择初始化QEMU的Shell")
+    if [[ "$shell" == "bash" ]]; then
+        rc=~/.bashrc
+    else
+        rc=~/.zshrc
+    fi
     # shellcheck disable=SC2016
-    printf 'export PATH=%s:"${PATH}"' "${PREFIX}"/bin >>~/.zshrc
+    printf 'export PATH=%s:"${PATH}"' "${PREFIX}"/bin >>"${rc}"
 }
 
 function init_riscvtools() {
@@ -506,8 +549,30 @@ function init_riscvtools() {
     cd ~/opt/riscv-tools/src && ./configure --prefix="${PREFIX}" --enable-gdb --enable-gcc-checkin
     make -j$(($(nproc) - 2))
     echo "${password}" | sudo -S apt install -y gdb-multiarch
+    shell=$(choose_shell "选择初始化RISCV-Tools的Shell")
+    if [[ $shell == "bash" ]]; then
+        rc=~/.bashrc
+    else
+        rc=~/.zshrc
+    fi
     # shellcheck disable=SC2016
-    printf 'export PATH=%s:"${PATH}"' "${PREFIX}"/bin >>~/.zshrc
+    printf 'export PATH=%s:"${PATH}"' "${PREFIX}"/bin >>"${rc}"
+}
+
+function init_miniconda() {
+    echo "=> 正在配置Miniconda"
+    miniconda_home="${HOME}"/opt/miniconda
+    mkdir -p "${miniconda_home}"
+    # 下载miniconda
+    HTTP_PROXY=127.0.0.1:${proxy_port} HTTPS_PROXY=127.0.0.1:${proxy_port} ALL_PROXY=127.0.0.1:${proxy_port} wget -c -P "${miniconda_home}" https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh
+    bash "${miniconda_home}"/Miniconda3-latest-Linux-x86_64.sh -b -u -p ~/miniconda3
+    # 初始化miniconda
+    shell=$(choose_shell "选择初始化Miniconda的Shell")
+    "${HOME}"/miniconda3/bin/conda init "${shell}"
+}
+
+function init_typora() {
+    echo "=> 正在配置Typora"
 }
 
 # 展示系统信息
@@ -533,6 +598,7 @@ while true; do
             11 "配置LunarVIM" \
             12 "配置QEMU" \
             13 "配置RISCV-Tools" \
+            14 "配置Miniconda" \
             2>&1 >/dev/tty
     )
     clear
@@ -577,12 +643,15 @@ while true; do
     13)
         init_riscvtools
         ;;
+    14)
+        init_miniconda
+        ;;
     *)
         echo "无效的选项"
         ;;
     esac
 
 done
-
-echo "Don't forget to source your ~/.zshrc to make everthing effective"
-echo "Have a good day and enjoy your Ubuntu :)"
+info="记得运行 source ~/.zshrc 或者 source ~/.bashrc 来让配置生效 \n开始享受Ubuntu吧 :)"
+dialog --title "信息" --msgbox "$info" 20 60
+clear
