@@ -264,7 +264,7 @@ function init_zsh() {
     mv ~/p10k_config/.p10k.zsh ~ && rm -rf ~/p10k_config
     # 配置插件
     # zsh自带插件
-    sed -i "s/plugins=(/plugins=(copypath copyfile copybuffer sudo /" ~/.zshrc
+    sed -i "s/plugins=(/plugins=copypath copyfile copybuffer sudo /" ~/.zshrc
     # github下载插件
     zsh_plugin zsh-autosuggestions "https://github.com/zsh-users/zsh-autosuggestions"
     zsh_plugin zsh-syntax-highlighting https://github.com/zsh-users/zsh-syntax-highlighting.git
@@ -595,6 +595,98 @@ function init_glances() {
     echo "${password}" | sudo -S systemctl start glances.service
 }
 
+function init_zoxide() {
+    echo "=> 正在配置Zoxide"
+    export HTTP_PROXY=127.0.0.1:${proxy_port} HTTPS_PROXY=127.0.0.1:${proxy_port} ALL_PROXY=127.0.0.1:${proxy_port}
+    shell=$(choose_shell "选择初始化Zoxide的Shell")
+    if [[ "$shell" == "bash" ]]; then
+        rc=~/.bashrc
+    else
+        rc=~/.zshrc
+    fi
+    echo "
+# Zoxide
+eval "$\(zoxide init "${shell}" --cmd cd\)"
+" >>"${rc}"
+    curl -sS https://raw.githubusercontent.com/ajeetdsouza/zoxide/main/install.sh | bash
+    git clone --depth 1 https://github.com/junegunn/fzf.git ~/.fzf
+    ~/.fzf/install
+}
+
+function init_bat() {
+    echo "=> 正在配置Bat"
+    export HTTP_PROXY=127.0.0.1:${proxy_port} HTTPS_PROXY=127.0.0.1:${proxy_port} ALL_PROXY=127.0.0.1:${proxy_port}
+    # 安装bat
+    cargo install --locked bat
+
+    shell=$(choose_shell "选择初始化Zoxide的Shell")
+    if [[ "$shell" == "bash" ]]; then
+        rc=~/.bashrc
+    else
+        rc=~/.zshrc
+    fi
+    echo "
+# Bat
+export BAT_CONFIG_PATH=${HOME}/.config/bat.conf
+export MANPAGER=\"sh -c 'col -bx | bat -l man -p'\"
+alias fzf="fzf --preview 'bat --color=always --style=numbers --line-range=:500 {}'"
+    " >>"${rc}"
+    cp "${dir}"/bat.conf ~/.config
+    # bat-extras安装
+    go install mvdan.cc/sh/v3/cmd/shfmt@latest
+    git clone https://github.com/eth-p/bat-extras.git ~/projects/bat-extras
+    ~/projects/bat-extras/build.sh --install --prefix="${HOME}/opt/bat-extras"
+    echo "
+# Bat-extras
+export MANPATH=$(manpath -g):/home/jack/opt/bat-extras/share/man
+    " >>"${rc}"
+    # shellcheck disable=SC2016
+    echo 'export PATH=${HOME}/opt/bat-extras/bin:${PATH}' >>"${rc}"
+}
+
+function init_go() {
+    echo "=> 正在配置Go"
+    go_home=${HOME}/opt/go
+    mkdir -p "${go_home}"
+    wget -e "http_proxy=127.0.0.1:${proxy_port}" -e "https_proxy=127.0.0.1:${proxy_port}" -P "$go_home" -c https://go.dev/dl/go1.21.4.linux-amd64.tar.gz
+    echo "$password" | sudo -S sudo rm -rf /usr/local/go
+    echo "$password" | sudo -S tar -C /usr/local -xzf "${go_home}"/go1.21.4.linux-amd64.tar.gz
+    shell=$(choose_shell "选择初始化Zoxide的Shell")
+    if [[ "$shell" == "bash" ]]; then
+        rc=~/.bashrc
+    else
+        rc=~/.zshrc
+    fi
+    # shellcheck disable=SC2016
+    echo 'export PATH=${PATH}:/usr/local/go/bin' >>"${rc}"
+}
+
+function init_eza() {
+    echo "=> 正在配置eza"
+    export HTTP_PROXY=127.0.0.1:${proxy_port} HTTPS_PROXY=127.0.0.1:${proxy_port} ALL_PROXY=127.0.0.1:${proxy_port}
+    eza_home="${HOME}/opt/eza"
+    mkdir -p "${eza_home}"
+    cargo install eza
+    shell=$(choose_shell "选择初始化Zoxide的Shell")
+    if [[ "$shell" == "bash" ]]; then
+        rc=~/.bashrc
+    else
+        rc=~/.zshrc
+    fi
+    clear
+    echo "
+# eza
+alias ls=\"eza --icons\"          # 默认显示 icons
+alias ll=\"eza --icons --long --header\"    # 显示文件目录详情
+alias la=\"eza --icons --long --header --all\"      # 显示全部文件目录，包括隐藏文件
+alias lg=\"eza --icons --long --header --all --git\"      # 显示详情的同时，附带 git 状态信息
+alias tree=\"eza --tree --icons\"   # 替换 tree 命令
+    " >>${rc}
+    git clone https://github.com/eza-community/eza.git "${eza_home}"
+    # shellcheck disable=SC2016
+    echo 'export FPATH="'"${eza_home}"'/completions/zsh:$FPATH"' >>~/.zshrc
+}
+
 function init_typora() {
     echo "=> 正在配置Typora"
 }
@@ -625,6 +717,10 @@ while true; do
             14 "配置Miniconda" \
             15 "配置Bottom" \
             16 "配置Glances" \
+            17 "配置Zoxide" \
+            18 "配置Bat" \
+            19 "配置Go" \
+            20 "配置eza" \
             2>&1 >/dev/tty
     )
     clear
@@ -677,6 +773,18 @@ while true; do
         ;;
     16)
         init_glances
+        ;;
+    17)
+        init_zoxide
+        ;;
+    18)
+        init_bat
+        ;;
+    19)
+        init_go
+        ;;
+    20)
+        init_eza
         ;;
     *)
         echo "无效的选项"
