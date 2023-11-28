@@ -269,6 +269,21 @@ function init_zsh() {
     zsh_plugin zsh-autosuggestions "https://github.com/zsh-users/zsh-autosuggestions"
     zsh_plugin zsh-syntax-highlighting https://github.com/zsh-users/zsh-syntax-highlighting.git
     zsh_plugin zsh-history-substring-search https://github.com/zsh-users/zsh-history-substring-search
+    echo "
+# zsh-history-substring-search
+bindkey '^[[A' history-substring-search-up
+bindkey '^[[B' history-substring-search-down
+bindkey \"\$terminfo[kcuu1]\" history-substring-search-up
+bindkey \"\$terminfo[kcud1]\" history-substring-search-down
+bindkey -M emacs '^P' history-substring-search-up
+bindkey -M emacs '^N' history-substring-search-down
+export HISTORY_SUBSTRING_SEARCH_HIGHLIGHT_FOUND=(bg=red,fg=magenta,bold)
+" >>~/.zshrc
+    zsh_plugin zsh-vi-mode https://github.com/jeffreytse/zsh-vi-mode.git
+    echo "
+    ZVM_VI_INSERT_ESCAPE_BINDKEY=jk
+" >>~/.zshrc
+
     # 修改默认终端
     echo "${password}" | chsh --shell "$(which zsh)" "$(whoami)"
     add_function ~/.zshrc
@@ -687,6 +702,16 @@ alias tree=\"eza --tree --icons\"   # 替换 tree 命令
     echo 'export FPATH="'"${eza_home}"'/completions/zsh:$FPATH"' >>~/.zshrc
 }
 
+function init_fd() {
+    echo "=> 正在配置fd"
+    cargo install fd-find
+}
+
+function init_ripgrep() {
+    echo "=> 正在配置ripgrep"
+    cargo install ripgrep
+}
+
 function init_typora() {
     echo "=> 正在配置Typora"
 }
@@ -721,6 +746,8 @@ while true; do
             18 "配置Bat" \
             19 "配置Go" \
             20 "配置eza" \
+            21 "配置fd" \
+            22 "配置ripgrep" \
             2>&1 >/dev/tty
     )
     clear
@@ -785,6 +812,12 @@ while true; do
         ;;
     20)
         init_eza
+        ;;
+    21)
+        init_fd
+        ;;
+    22)
+        init_ripgrep
         ;;
     *)
         echo "无效的选项"
