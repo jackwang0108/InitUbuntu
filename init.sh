@@ -108,6 +108,7 @@ function choose_shell() {
             2 "bash" \
             2>&1 >/dev/tty
     )
+    clear
     case $choice in
     1)
         echo "zsh"
@@ -710,6 +711,35 @@ function init_fd() {
 function init_ripgrep() {
     echo "=> 正在配置ripgrep"
     cargo install ripgrep
+}
+
+function init_todo() {
+    echo "=> 正在初始化todo.sh"
+    todo_home="${HOME}/opt/todo"
+    mkdir -p "${todo_home}"
+    wget -P "${todo_home}" -c https://github.com/todotxt/todo.txt-cli/releases/download/v2.12.0/todo.txt_cli-2.12.0.tar.gz
+    tar xzvf "${todo_home}/todo.txt_cli-2.12.0.tar.gz" -C "${todo_home}"
+    # 安装可执行文件
+    mkdir -p "${todo_home}"/bin
+    mv "${todo_home}"/todo.txt_cli-2.12.0/todo.sh "${todo_home}"/bin
+    # 配置
+    mkdir -p "${HOME}"/.todo
+    mv "${todo_home}"/todo.txt_cli-2.12.0/todo.cfg "${HOME}"/.todo/config
+    # shellcheck disable=SC2016
+    sed -i '1s/export TODO_DIR=$(dirname "$0")/export TODO_DIR="\/home\/jack\/opt\/todo\/bin\/"/' "${HOME}"/.todo/config
+    # 命令行配置
+    shell=$(choose_shell "选择初始化todo的Shell")
+    if [[ "$shell" == "bash" ]]; then
+        file=~/.bashrc
+    else
+        file=~/.zshrc
+    fi
+    # shellcheck disable=SC2140
+    echo "
+# todo
+export PATH=\${PATH}:${todo_home}/bin
+alias todo="todo.sh"
+" >>"${rc}"
 }
 
 function init_typora() {
