@@ -261,8 +261,7 @@ function init_zsh() {
 # To customize prompt, run \$(p10k configure) or edit ~/.p10k.zsh.
 [[ ! -f ~/.p10k.zsh ]] || source ~/.p10k.zsh
 " >>~/.zshrc
-    git clone https://gitee.com/jackwangsh/p10k_config.git ~/p10k_config
-    mv ~/p10k_config/.p10k.zsh ~ && rm -rf ~/p10k_config
+    mv "${dir}/.p10k.zsh" "${HOME}"
     # 配置插件
     # zsh自带插件
     sed -i "s/plugins=(/plugins=copypath copyfile copybuffer sudo /" ~/.zshrc
