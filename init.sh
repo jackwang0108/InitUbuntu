@@ -311,8 +311,24 @@ export HISTORY_SUBSTRING_SEARCH_HIGHLIGHT_FOUND=(bg=red,fg=magenta,bold)
 function init_tmux() {
     echo "=> 正在配置tmux"
     echo "${password}" | sudo -S apt install tmux -y
-    mkdir -p ~/opt/tmux
-    cp "${dir}"/.tmux.conf ~/
+    choice=$(
+        dialog --title "${msg}" --menu "请选择使用的Tmux配置：" 10 40 2 \
+            1 "MyConfig" \
+            2 "Oh-my-Tmux" \
+            2>&1 >/dev/tty
+    )
+    clear
+    tmux_home="${HOME}"/opt/tmux
+    if [[ $choice == "Myconfig" ]]; then
+        mkdir -p "${tmux_home}"
+        cp "${dir}"/.tmux.conf "${tmux_home}"
+        ln -s -f "${tmux_home}"/.tmux.conf ~/.tmux.conf
+    else
+        git clone https://github.com/gpakosz/.tmux.git "${tmux_home}"/oh-my-tmux
+        ln -s -f "${tmux_home}"/oh-my-tmux/.tmux.conf "${HOME}"
+        cp "${dir}"/.tmux.conf.local "${tmux_home}"/oh-my-tmux/.tmux.conf.local
+        ln -s -f "${tmux_home}"/oh-my-tmux/.tmux.conf.local "${HOME}"
+    fi
 }
 
 function init_vim() {
@@ -716,7 +732,8 @@ function init_todo() {
     echo "=> 正在初始化todo.sh"
     todo_home="${HOME}/opt/todo"
     mkdir -p "${todo_home}"
-    wget -P "${todo_home}" -c https://github.com/todotxt/todo.txt-cli/releases/download/v2.12.0/todo.txt_cli-2.12.0.tar.gz
+
+    wget -e "http_proxy=127.0.0.1:${proxy_port}" -e "https_proxy=127.0.0.1:${proxy_port}" -P "${todo_home}" -c https://github.com/todotxt/todo.txt-cli/releases/download/v2.12.0/todo.txt_cli-2.12.0.tar.gz
     tar xzvf "${todo_home}/todo.txt_cli-2.12.0.tar.gz" -C "${todo_home}"
     # 安装可执行文件
     mkdir -p "${todo_home}"/bin
@@ -777,6 +794,7 @@ while true; do
             20 "配置eza" \
             21 "配置fd" \
             22 "配置ripgrep" \
+            23 "配置todo" \
             2>&1 >/dev/tty
     )
     clear
@@ -847,6 +865,9 @@ while true; do
         ;;
     22)
         init_ripgrep
+        ;;
+    23)
+        init_todo
         ;;
     *)
         echo "无效的选项"
