@@ -759,23 +759,23 @@ alias todo="todo.sh"
 }
 
 function init_lazygit() {
-    echo "=> 正在配置 LazyGit"
-    lazygit_home="${HOME}/opt/lazygit"
+    echo "=> 正在配置Lazygit"
     LAZYGIT_VERSION=$(curl -s "https://api.github.com/repos/jesseduffield/lazygit/releases/latest" | grep -Po '"tag_name": "v\K[^"]*')
-    mkdir -p "$lazygit_home/$LAZYGIT_VERSION"
-    wget -c -O "${lazygit_home}/lazygit-${LAZYGIT_VERSION}.tar.gz" "https://github.com/jesseduffield/lazygit/releases/latest/download/lazygit_${LAZYGIT_VERSION}_Linux_x86_64.tar.gz"
-    tar xzvf "${lazygit_home}/lazygit-${LAZYGIT_VERSION}.tar.gz" -C "$lazygit_home/$LAZYGIT_VERSION"
-    ln -s "$lazygit_home/$LAZYGIT_VERSION" "$lazygit_home"/bin
+    lazygit_home="${HOME}/opt/lazygit"
+    mkdir -p "${lazygit_home}/lazygit-${LAZYGIT_VERSION}"
+    wget -e "http_proxy=127.0.0.1:${proxy_port}" -e "https_proxy=127.0.0.1:${proxy_port}" -c -O "${lazygit_home}/lazygit-${LAZYGIT_VERSION}.tar.gz" "https://github.com/jesseduffield/lazygit/releases/latest/download/lazygit_${LAZYGIT_VERSION}_Linux_x86_64.tar.gz"
+    tar xzvf "${lazygit_home}/lazygit-${LAZYGIT_VERSION}.tar.gz" -C "${lazygit_home}/lazygit-${LAZYGIT_VERSION}"
+    ln -s "${lazygit_home}/lazygit-${LAZYGIT_VERSION}" "${lazygit_home}/bin"
     shell=$(choose_shell "请选择初始化LazyGit的Shell")
     if [[ "$shell" == "bash" ]]; then
-        file=~/.bashrc
+        rc=~/.bashrc
     else
-        file=~/.zshrc
+        rc=~/.zshrc
     fi
     echo "
-# LazyGit
-export PATH=\${PATH}:$lazygit_home/bin
-" >>${file}
+# Lazygit
+export PATH=\${PATH}:${lazygit_home}/bin
+" >>${rc}
 }
 
 function init_typora() {
@@ -815,7 +815,7 @@ while true; do
             21 "配置fd" \
             22 "配置ripgrep" \
             23 "配置todo" \
-            24 "配置Lazygit" \
+            24 "配置lazygit" \
             2>&1 >/dev/tty
     )
     clear
