@@ -766,10 +766,16 @@ function init_lazygit() {
     wget -e "http_proxy=127.0.0.1:${proxy_port}" -e "https_proxy=127.0.0.1:${proxy_port}" -c -O "${lazygit_home}/lazygit-${LAZYGIT_VERSION}.tar.gz" "https://github.com/jesseduffield/lazygit/releases/latest/download/lazygit_${LAZYGIT_VERSION}_Linux_x86_64.tar.gz"
     tar xzvf "${lazygit_home}/lazygit-${LAZYGIT_VERSION}.tar.gz" -C "${lazygit_home}/lazygit-${LAZYGIT_VERSION}"
     ln -s "${lazygit_home}/lazygit-${LAZYGIT_VERSION}" "${lazygit_home}/bin"
+    shell=$(choose_shell "请选择初始化LazyGit的Shell")
+    if [[ "$shell" == "bash" ]]; then
+        rc=~/.bashrc
+    else
+        rc=~/.zshrc
+    fi
     echo "
 # Lazygit
 export PATH=\${PATH}:${lazygit_home}/bin
-"
+" >>${rc}
 }
 
 function init_typora() {
