@@ -264,7 +264,7 @@ function init_zsh() {
     mv "${dir}/.p10k.zsh" "${HOME}"
     # 配置插件
     # zsh自带插件
-    sed -i "s/plugins=(/plugins=copypath copyfile copybuffer sudo /" ~/.zshrc
+    sed -i "s/plugins=(/plugins=(copypath copyfile copybuffer sudo /" ~/.zshrc
     # github下载插件
     zsh_plugin zsh-autosuggestions "https://github.com/zsh-users/zsh-autosuggestions"
     zsh_plugin zsh-syntax-highlighting https://github.com/zsh-users/zsh-syntax-highlighting.git
@@ -281,7 +281,7 @@ export HISTORY_SUBSTRING_SEARCH_HIGHLIGHT_FOUND=(bg=red,fg=magenta,bold)
 " >>~/.zshrc
     zsh_plugin zsh-vi-mode https://github.com/jeffreytse/zsh-vi-mode.git
     echo "
-    ZVM_VI_INSERT_ESCAPE_BINDKEY=jk
+ZVM_VI_INSERT_ESCAPE_BINDKEY=jj
 " >>~/.zshrc
 
     # 修改默认终端
@@ -477,7 +477,7 @@ export PATH=/home/jack/opt/neovim/bin:${PATH}' >>"${rc}"
     fi
     export PATH=/home/jack/opt/neovim/bin:${PATH}
     # 安装 lunarvim
-    echo "${password}" | sudo -S apt install python-is-python3 python3-pip
+    echo "${password}" | sudo -S apt install -y python-is-python3 python3-pip
     LV_BRANCH='release-1.3/neovim-0.9' bash <(curl -s https://raw.githubusercontent.com/LunarVim/LunarVim/release-1.3/neovim-0.9/utils/installer/install.sh)
     export PATH=${HOME}/.local/bin
     if ! (grep -q "lvim" "${rc}"); then
@@ -637,7 +637,7 @@ function init_zoxide() {
     fi
     echo "
 # Zoxide
-eval "$\(zoxide init "${shell}" --cmd cd\)"
+eval '\$(zoxide init \"${shell}\" --cmd cd)'
 " >>"${rc}"
     curl -sS https://raw.githubusercontent.com/ajeetdsouza/zoxide/main/install.sh | bash
     git clone --depth 1 https://github.com/junegunn/fzf.git ~/.fzf
