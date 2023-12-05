@@ -11,6 +11,11 @@ if [[ "$os" == 'Darwin' ]]; then
     log "Darwin is not supported now" "$BOLD" "$RED"
 fi
 
+# Command Line Options
+isTUI="False"
+isInteractive="False"
+isDependency="False"
+
 # Dependencies
 isGit=$(whereis git | awk -F ' ' '{print $2}')
 isVim=$(whereis vim | awk -F ' ' '{print $2}')
@@ -34,6 +39,7 @@ RESET=$(tput sgr0)
 
 # Init Tools
 mlen=0
+functions_to_run=()
 init_functions=()
 while IFS= read -r line; do
     if [[ $line =~ ^function\ init.* ]]; then
@@ -46,10 +52,7 @@ while IFS= read -r line; do
     fi
 done <"$dir/init.sh"
 
-# Check SUDO privilege
-read -r -s -p "[initUbuntu] Please enter password for $USER: " PASS && echo ""
-echo "$PASS" | sudo -S -l -U "$USER" | grep -q 'may run the following' ||
-    (ilog "initUbuntu needs SUDO privilege to run. Make sure you have it." "$BOLD" "$RED" && exit 1)
+# ============================= Helper Functions =============================
 
 # ilog() - Print log messages with style and color to the terminal
 #
@@ -71,6 +74,100 @@ function ilog() {
     echo "${style:-$RESET}${color:-$WHITE}${msg}${RESET}"
 }
 
+function parse_range() {
+    # check if range is valid
+    if ! [[ $1 =~ ^[0-9]+-[0-9]+$ ]]; then
+        ilog "Invalid input format: $1. Expected format: X-Y" "${BOLD}" "${YELLOW}"
+        return 1
+    fi
+    IFS='-' read -ra range <<<"$1"
+    range_start=${range[0]}
+    range_end=${range[1]}
+    for ((i = range_start; i <= range_end; i++)); do
+        index=$((i - 1))
+        if ((index >= 0 && index < ${#init_functions[@]})); then
+            if [[ ${font_options[index]} != "Quit" ]]; then
+                selected_fonts[index]=${font_options[index]}
+            fi
+        else
+            echo "${RED}Invalid option: $i. Try again.${RESET}"
+            return 1
+        fi
+    done
+}
+
+# shellcheck disable=SC2120
+function show_menu() {
+    choices=()
+    if [[ $isTUI == "True" ]]; then
+        # shellcheck disable=SC2086
+        while true; do
+            menu_content=$(
+                for index in "${!init_functions[@]}"; do
+                    for i in "${functions_to_run[@]}"; do
+                        if [[ $i == "$index" ]]; then
+                            continue 2
+                        fi
+                    done
+                    echo "${index} ${init_functions[$index]#init_}"
+                done
+            )
+            dialog --title "InitUbuntu" --ok-label "Add" --cancel-label "Start" --menu "Add a tool to installation list: " 30 50 20 ${menu_content} 2>"${dir}/menuchoice"
+            menu_status=$?
+            choice=$(cat "${dir}/menuchoice")
+            rm "${dir}/menuchoice"
+            if [ $menu_status -eq 0 ]; then
+                functions_to_run+=("$choice")
+            elif [ $menu_status -eq 1 ]; then
+                msg=$(
+                    for index in "${functions_to_run[@]}"; do
+                        printf "\t%02d %s\n" $index ${init_functions[$index]#init_}
+                    done
+                )
+                dialog --title "Tools to be installed" --msgbox "${msg}" 30 50
+                break
+            fi
+        done
+    elif [[ $isInteractive == "True" ]]; then
+        for i in "${!init_functions[@]}"; do
+            printf "%02d) %-${mlen}s\n" "$((i))" "${init_functions[$i]}"
+        done | pr -o 8 -3 -t -w "$(tput cols)"
+        while true; do
+            read -r -p "${BLUE}Select a tool to install (e.g. 0,1,2 or 1-3 or 1,3-5): ${GREEN}" choices && echo -n "${RESET}"
+            # Handler user input
+            for choice in $(echo "$choices" | tr ',' ' '); do
+                if [[ $choice == *-* ]]; then
+                    # parse range, e.g. 1-3
+                    if ! [[ $choice =~ ^[0-9]+-[0-9]$ ]]; then
+                        ilog "Invalid input format: $1. Expected format: X-Y" "${BOLD}" "${YELLOW}"
+                    fi
+                    IFS='-' read -ra range <<<"$choice"
+                    range_start=${range[0]}
+                    range_end=${range[1]}
+                    for ((i = range_start; i <= range_end; i++)); do
+                        if ((0 <= i && i <= ${#init_functions[@]})); then
+                            functions_to_run+=("$i")
+                        fi
+                    done
+                elif ((0 <= choice && choice <= ${#init_functions[@]})); then
+                    # parse number, e.g. 5
+                    functions_to_run+=("$choice")
+                else
+                    # out of range, e.g. 1000
+                    ilog "Invalid Option: $choice. Try again." "${BOLD}" "${YELLOW}"
+                    continue 2
+                fi
+            done
+            echo "Tools to be installed: "
+            for index in "${functions_to_run[@]}"; do
+                printf "\t%02d %s\n" "$index" "${init_functions[$index]#init_}"
+            done
+            break
+        done
+    fi
+    echo "$choice"
+}
+
 function usage() {
     echo "initUbuntu: A ${BOLD}${GREEN}Better${RESET} way to initialize your Ubuntu"
     echo ""
@@ -78,7 +175,7 @@ function usage() {
     echo "    ${BLUE}-h${RESET} print this help message and exit"
     echo "    ${BLUE}-d${RESET} install all dependencies"
     echo "    ${BLUE}-t${RESET} use TUI to initialize your ubuntu"
-    echo "    ${BLUE}-i${RESET} select tool you want to install. Available tools are:"
+    echo "    ${BLUE}-i${RESET} interactive install selected tools. Available tools are:"
     for i in "${!init_functions[@]}"; do
         printf "%02d) %-${mlen}s\n" "$((i + 1))" "${init_functions[$i]}"
     done | pr -o 8 -3 -t -w "$(($(tput cols) - 75))"
@@ -89,36 +186,29 @@ function usage() {
     echo 'or you can use `initUbuntu -t` to run text-based UI (dependency dialog is needed)'
 }
 
-function change_source() {
-    echo "=> 正在换源"
-    # 版本代号
-    code_name=$(lsb_release -cs)
-    # 中科大源
-    ustc_source="
-# 中科大源
-deb https://mirrors.ustc.edu.cn/ubuntu/ ${code_name} main restricted universe multiverse
-deb https://mirrors.ustc.edu.cn/ubuntu/ ${code_name}-updates main restricted universe multiverse
-deb https://mirrors.ustc.edu.cn/ubuntu/ ${code_name}-backports main restricted universe multiverse
-deb https://mirrors.ustc.edu.cn/ubuntu/ ${code_name}-security main restricted universe multiverse
+# Set flags
+_opt=""
+while getopts "hitd" option; do
+    case "$option" in
+    h) usage && exit "$exitSucc" ;;
+    d) _opt="True" isDependency="True" || exit "$exitFail" ;;
+    t) _opt="True" isTUI="True" || exit "$exitFail" ;;
+    i) _opt="True" isInteractive="True" || exit "$exitFail" ;;
+    ?) usage && exit "$exitSucc" ;;
+    esac
+done
+[[ -z "$_opt" ]] && usage && exit "$exitFail"
 
-# deb-src https://mirrors.ustc.edu.cn/ubuntu/ ${code_name} main restricted universe multiverse
-# deb-src https://mirrors.ustc.edu.cn/ubuntu/ ${code_name}-updates main restricted universe multiverse
-# deb-src https://mirrors.ustc.edu.cn/ubuntu/ ${code_name}-backports main restricted universe multiverse
-# deb-src https://mirrors.ustc.edu.cn/ubuntu/ ${code_name}-security main restricted universe multiverse
-
-## Pre-released source, not recommended.
-# deb https://mirrors.ustc.edu.cn/ubuntu/ ${code_name}-proposed main restricted universe multiverse
-# deb-src https://mirrors.ustc.edu.cn/ubuntu/ ${code_name}-proposed main restricted universe multiverse
-"
-    # 备份先前源
-    echo "${PASS}" | sudo -S cp /etc/apt/sources.list /etc/apt/sources.list.backup-"$(date +%Y.%m.%d.%S)"
-    # 设置新源
-    echo "$ustc_source" >temp && (echo "${PASS}" | sudo -S cp temp /etc/apt/sources.list) && rm temp
-
-    # 更新
-    echo "${PASS}" | sudo -S apt update
-    echo "${PASS}" | sudo -S apt upgrade -y
-}
+# check denpendencies
+if [[ $isDependency != "True" ]]; then
+    [[ -z $isGit ]] && ilog "Dependency git is not installed on your system. Use -d option to install dependencies"
+    [[ -z $isTar ]] && ilog "Dependency tar is not installed on your system. Use -d option to install dependencies"
+    [[ -z $isVim ]] && ilog "Dependency vim is not installed on your system. Use -d option to install dependencies"
+    [[ -z $isUnzip ]] && ilog "Dependency unzip is not installed on your system. Use -d option to install dependencies"
+    [[ -z $isWget ]] && ilog "Dependency wget is not installed on your system. Use -d option to install dependencies"
+    [[ -z $isCurl ]] && ilog "Dependency curl is not installed on your system. Use -d option to install dependencies"
+    [[ -z $isDialog ]] && ilog "Dependency dialog is not installed on your system. Use -d option to install dependencies"
+fi
 
 function install_dependency() {
     ilog "=> Installing dependencies" "$BOLD" "$GREEN"
@@ -133,22 +223,9 @@ function install_dependency() {
     echo "$tools"
 }
 
-# Set flags
-while getopts :hitd option; do
-    case "$option" in
-    h) usage && exit "$exitSucc" ;;
-    d) install_dependency || exit "$exitSucc" ;;
-    t) ilog "Not implemented yet" && exit "$exitFail" ;;
-    i) ilog "Not implemented yet" && exit "$exitFail" ;;
-    *) usage && exit "$exitSucc" ;;
-    esac
-done
+echo $isTUI
+show_menu
 
-# check denpendencies
-[[ -z $isGit ]] && ilog "Dependency git is not installed on your system. Use -d option to install dependencies"
-[[ -z $isTar ]] && ilog "Dependency tar is not installed on your system. Use -d option to install dependencies"
-[[ -z $isVim ]] && ilog "Dependency vim is not installed on your system. Use -d option to install dependencies"
-[[ -z $isUnzip ]] && ilog "Dependency unzip is not installed on your system. Use -d option to install dependencies"
-[[ -z $isWget ]] && ilog "Dependency wget is not installed on your system. Use -d option to install dependencies"
-[[ -z $isCurl ]] && ilog "Dependency curl is not installed on your system. Use -d option to install dependencies"
-[[ -z $isDialog ]] && ilog "Dependency dialog is not installed on your system. Use -d option to install dependencies"
+# read -r -s -p "[initUbuntu] Please enter password for $USER: " PASS && echo "" # Check SUDO privilege
+# echo "$PASS" | sudo -S -l -U "$USER" | grep -q 'may run the following' ||
+#     (ilog "initUbuntu needs SUDO privilege to run. Make sure you have it." "$BOLD" "$RED" && exit 1)
