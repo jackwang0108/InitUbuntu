@@ -15,15 +15,16 @@ fi
 isTUI="False"
 isInteractive="False"
 isDependency="False"
+isChangeSource="False"
 
 # Dependencies
-isGit=$(whereis git | awk -F ' ' '/(?!man)/{print $2}')
-isVim=$(whereis vim | awk -F ' ' '/(?!man)/{print $2}')
-isTar=$(whereis tar | awk -F ' ' '/(?!man)/{print $2}')
-isUnzip=$(whereis unzip | awk -F ' ' '/(?!man)/{print $2}')
-isWget=$(whereis wget | awk -F ' ' '/(?!man)/{print $2}')
-isCurl=$(whereis curl | awk -F ' ' '/(?!man)/{print $2}')
-isDialog=$(whereis dialog | awk -F ' ' '/(?!man)/{print $2}')
+isGit=$(whereis git | awk -F ' ' '{print $2}' | grep -v "man")
+isVim=$(whereis vim | awk -F ' ' '{print $2}' | grep -v "man")
+isTar=$(whereis tar | awk -F ' ' '{print $2}' | grep -v "man")
+isUnzip=$(whereis unzip | awk -F ' ' '{print $2}' | grep -v "man")
+isWget=$(whereis wget | awk -F ' ' '{print $2}' | grep -v "man")
+isCurl=$(whereis curl | awk -F ' ' '{print $2}' | grep -v "man")
+isDialog=$(whereis dialog | awk -F ' ' '{print $2}' | grep -v "man")
 
 # Color
 RED=$(tput setaf 1)
@@ -75,6 +76,21 @@ function ilog() {
     echo "${style:-$RESET}${color:-$WHITE}${msg}${RESET}"
 }
 
+# show_menu() - Displays a menu and prompts the user to select tools.
+#
+# The function supports both TUI (Text-based User Interface) and interactive modes.
+# The index of init_functions of selected tools will be stored in functions_to_run variable
+#
+# Parameters:
+#   None
+#
+# Example:
+#   show_menu
+#   # Run init functions
+#   for index in "${functions_to_run[@]}"; do
+#       printf "Running %s\n" "${init_functions[$index]}"
+#       ${init_functions[$index]}
+#   done
 # shellcheck disable=SC2120
 function show_menu() {
     choices=()
@@ -149,7 +165,6 @@ function show_menu() {
             break
         done
     fi
-    echo "$choice"
 }
 
 function usage() {
@@ -158,6 +173,7 @@ function usage() {
     echo "Usage:"
     echo "    ${BLUE}-h${RESET} print this help message and exit"
     echo "    ${BLUE}-d${RESET} install all dependencies"
+    echo "    ${BLUE}-c${RESET} change source from given sources"
     echo "    ${BLUE}-t${RESET} use TUI to initialize your ubuntu"
     echo "    ${BLUE}-i${RESET} interactive install selected tools. Available tools are:"
     for i in "${!init_functions[@]}"; do
@@ -172,10 +188,11 @@ function usage() {
 
 # Set flags
 _opt=""
-while getopts "hitd" option; do
+while getopts "hitdc" option; do
     case "$option" in
     h) usage && exit "$exitSucc" ;;
     d) _opt="True" isDependency="True" || exit "$exitFail" ;;
+    c) _opt="True" isChangeSource="True" || exit "$exitFail" ;;
     t) _opt="True" isTUI="True" || exit "$exitFail" ;;
     i) _opt="True" isInteractive="True" || exit "$exitFail" ;;
     ?) usage && exit "$exitSucc" ;;
@@ -185,16 +202,50 @@ done
 
 # check denpendencies
 if [[ $isDependency != "True" ]]; then
-    [[ -z $isGit ]] && ilog "Dependency git is not installed on your system. Use -d option to install dependencies"
-    [[ -z $isTar ]] && ilog "Dependency tar is not installed on your system. Use -d option to install dependencies"
-    [[ -z $isVim ]] && ilog "Dependency vim is not installed on your system. Use -d option to install dependencies"
-    [[ -z $isUnzip ]] && ilog "Dependency unzip is not installed on your system. Use -d option to install dependencies"
-    [[ -z $isWget ]] && ilog "Dependency wget is not installed on your system. Use -d option to install dependencies"
-    [[ -z $isCurl ]] && ilog "Dependency curl is not installed on your system. Use -d option to install dependencies"
-    [[ -z $isDialog ]] && ilog "Dependency dialog is not installed on your system. Use -d option to install dependencies"
+    _not_ok="False"
+    [[ -z $isGit ]] && _not_ok="True" ilog "Dependency git is not installed on your system. Use -d option to install dependencies" "${BOLD}" "${RED}"
+    [[ -z $isTar ]] && _not_ok="True" ilog "Dependency tar is not installed on your system. Use -d option to install dependencies" "${BOLD}" "${RED}"
+    [[ -z $isVim ]] && _not_ok="True" ilog "Dependency vim is not installed on your system. Use -d option to install dependencies" "${BOLD}" "${RED}"
+    [[ -z $isUnzip ]] && _not_ok="True" ilog "Dependency unzip is not installed on your system. Use -d option to install dependencies" "${BOLD}" "${RED}"
+    [[ -z $isWget ]] && _not_ok="True" ilog "Dependency wget is not installed on your system. Use -d option to install dependencies" "${BOLD}" "${RED}"
+    [[ -z $isCurl ]] && _not_ok="True" ilog "Dependency curl is not installed on your system. Use -d option to install dependencies" "${BOLD}" "${RED}"
+    [[ -z $isDialog ]] && _not_ok="True" ilog "Dependency dialog is not installed on your system. Use -d option to install dependencies" "${BOLD}" "${RED}"
+    [[ $_not_ok == "True" ]] && ilog "Dependcies are not installed, exit." "${BOLD}" "${RED}" && exit "$exitFail"
 fi
 
 # ============================= init Functions =============================
+function change_source() {
+    ilog "=> Changing apt source" "$BOLD" "$GREEN"
+    release_name=$(lsb_release -cs)
+    all_sources=()
+    for file in "${dir}"/*\.source; do
+        _file=$(basename "$file")
+        all_sources+=("${_file/\.source/}")
+    done
+    for i in "${!all_sources[@]}"; do
+        printf "%02d) %s\n" "$((i))" "${all_sources[$i]}"
+    done | pr -o 8 -3 -t -w "$(tput cols)"
+    while true; do
+        read -r -p "${BLUE}Select a source you want to use (e.g. 1 or 2): ${GREEN}" choice && echo -n "${RESET}"
+        if [[ ! $choice =~ ^[0-9]+$ ]]; then
+            ilog "Invalid option: ${choice}, please select a number" "${NORMAL}" "${YELLOW}"
+        elif ((choice < 0 || choice > ${#all_sources[@]} - 1)); then
+            ilog "Out of range: ${choice}, please select a number between 0 to $((${#all_sources[@]} - 1))" "${NORMAL}" "${YELLOW}"
+        else
+            source_file="${dir}/${all_sources[$choice]}.source"
+            break
+        fi
+    done
+    # Backup and set new source
+    echo "$PASS" | sudo -S cp /etc/apt/sources.list /etc/apt/sources.list.backup-"$(date +%Y.%m.%d.%S)"
+    sed "s/\${release_name}/${release_name}/g" "${source_file}" >>"${dir}/temp"
+    echo "$PASS" | sudo -S mv temp /etc/apt/sources.list
+
+    # Update use new source
+    echo "$PASS" | sudo -S apt update
+    echo "$PASS" | sudo -S apt upgrade -y
+}
+
 function install_dependency() {
     ilog "=> Installing dependencies" "$BOLD" "$GREEN"
     tools=""
@@ -228,10 +279,6 @@ function init_test2() {
 show_menu
 
 # TODO: 添加main函数, 实现依赖安装, 同时添加别的函数
-for index in "${functions_to_run[@]}"; do
-    printf "\t%02d %s\n" "$index" "${init_functions[$index]#init_}"
-    ${init_functions[$index]}
-done
 
 function main() {
     # Read Password
@@ -239,8 +286,17 @@ function main() {
     # Check SUDO privilege
     (echo "$PASS" | sudo -S -l -U "$USER" | grep -q 'may run the following') ||
         (ilog "initUbuntu needs SUDO privilege to run. Make sure you have it." "$BOLD" "$RED" && exit 1)
-    if [[ $isDependency == "True" ]]; then
+
+    # main function
+    if [[ $isChangeSource == "True" ]]; then
+        change_source
+    elif [[ $isDependency == "True" ]]; then
         install_dependency
+    elif [[ $isInteractive == "True" ]] || [[ $isTUI == "True" ]]; then
+        for index in "${functions_to_run[@]}"; do
+            printf "\t%02d %s\n" "$index" "${init_functions[$index]#init_}"
+            ${init_functions[$index]}
+        done
     fi
 }
 
