@@ -17,13 +17,13 @@ isInteractive="False"
 isDependency="False"
 
 # Dependencies
-isGit=$(whereis git | awk -F ' ' '{print $2}')
-isVim=$(whereis vim | awk -F ' ' '{print $2}')
-isTar=$(whereis tar | awk -F ' ' '{print $2}')
-isUnzip=$(whereis unzip | awk -F ' ' '{print $2}')
-isWget=$(whereis wget | awk -F ' ' '{print $2}')
-isCurl=$(whereis curl | awk -F ' ' '{print $2}')
-isDialog=$(whereis dialog | awk -F ' ' '{print $2}')
+isGit=$(whereis git | awk -F ' ' '/(?!man)/{print $2}')
+isVim=$(whereis vim | awk -F ' ' '/(?!man)/{print $2}')
+isTar=$(whereis tar | awk -F ' ' '/(?!man)/{print $2}')
+isUnzip=$(whereis unzip | awk -F ' ' '/(?!man)/{print $2}')
+isWget=$(whereis wget | awk -F ' ' '/(?!man)/{print $2}')
+isCurl=$(whereis curl | awk -F ' ' '/(?!man)/{print $2}')
+isDialog=$(whereis dialog | awk -F ' ' '/(?!man)/{print $2}')
 
 # Color
 RED=$(tput setaf 1)
@@ -33,6 +33,7 @@ BLUE=$(tput setaf 4)
 WHITE=$(tput setaf 7)
 # Style
 BOLD=$(tput bold)
+NORMAL=""
 DIM=$(tput dim)
 # Normal
 RESET=$(tput sgr0)
@@ -50,7 +51,7 @@ while IFS= read -r line; do
             mlen=$len
         fi
     fi
-done <"$dir/init.sh"
+done <"$dir/new.sh"
 
 # ============================= Helper Functions =============================
 
@@ -74,28 +75,6 @@ function ilog() {
     echo "${style:-$RESET}${color:-$WHITE}${msg}${RESET}"
 }
 
-function parse_range() {
-    # check if range is valid
-    if ! [[ $1 =~ ^[0-9]+-[0-9]+$ ]]; then
-        ilog "Invalid input format: $1. Expected format: X-Y" "${BOLD}" "${YELLOW}"
-        return 1
-    fi
-    IFS='-' read -ra range <<<"$1"
-    range_start=${range[0]}
-    range_end=${range[1]}
-    for ((i = range_start; i <= range_end; i++)); do
-        index=$((i - 1))
-        if ((index >= 0 && index < ${#init_functions[@]})); then
-            if [[ ${font_options[index]} != "Quit" ]]; then
-                selected_fonts[index]=${font_options[index]}
-            fi
-        else
-            echo "${RED}Invalid option: $i. Try again.${RESET}"
-            return 1
-        fi
-    done
-}
-
 # shellcheck disable=SC2120
 function show_menu() {
     choices=()
@@ -112,8 +91,12 @@ function show_menu() {
                     echo "${index} ${init_functions[$index]#init_}"
                 done
             )
-            dialog --title "InitUbuntu" --ok-label "Add" --cancel-label "Start" --menu "Add a tool to installation list: " 30 50 20 ${menu_content} 2>"${dir}/menuchoice"
-            menu_status=$?
+            if [[ -n $menu_content ]]; then
+                dialog --title "InitUbuntu" --ok-label "Add" --cancel-label "Start" --menu "Add a tool to installation list: " 30 50 20 ${menu_content} 2>"${dir}/menuchoice"
+                menu_status=$?
+            else
+                menu_status=1
+            fi
             choice=$(cat "${dir}/menuchoice")
             rm "${dir}/menuchoice"
             if [ $menu_status -eq 0 ]; then
@@ -128,6 +111,7 @@ function show_menu() {
                 break
             fi
         done
+        clear
     elif [[ $isInteractive == "True" ]]; then
         for i in "${!init_functions[@]}"; do
             printf "%02d) %-${mlen}s\n" "$((i))" "${init_functions[$i]}"
@@ -210,6 +194,7 @@ if [[ $isDependency != "True" ]]; then
     [[ -z $isDialog ]] && ilog "Dependency dialog is not installed on your system. Use -d option to install dependencies"
 fi
 
+# ============================= init Functions =============================
 function install_dependency() {
     ilog "=> Installing dependencies" "$BOLD" "$GREEN"
     tools=""
@@ -220,12 +205,43 @@ function install_dependency() {
     [[ -z $isWget ]] && tools="$tools wget"
     [[ -z $isCurl ]] && tools="$tools curl"
     [[ -z $isDialog ]] && tools="$tools dialog"
-    echo "$tools"
+    [[ -n $tools ]] && msg="Dependencies to be installed: ${tools}" || msg="All dependencies are installed. Nothing to do"
+    ilog "$msg" "${NORMAL}" "${BLUE}"
+    sleep 3s
+    # shellcheck disable=SC2086
+    echo "$PASS" | sudo -S apt install -y ${tools}
 }
 
-echo $isTUI
+function init_test() {
+    echo "=> init_test"
+}
+
+function init_test1() {
+    echo "=> init_test1"
+}
+
+function init_test2() {
+    echo "=> init_test2"
+}
+
+# Show menu and get user input
 show_menu
 
-# read -r -s -p "[initUbuntu] Please enter password for $USER: " PASS && echo "" # Check SUDO privilege
-# echo "$PASS" | sudo -S -l -U "$USER" | grep -q 'may run the following' ||
-#     (ilog "initUbuntu needs SUDO privilege to run. Make sure you have it." "$BOLD" "$RED" && exit 1)
+# TODO: 添加main函数, 实现依赖安装, 同时添加别的函数
+for index in "${functions_to_run[@]}"; do
+    printf "\t%02d %s\n" "$index" "${init_functions[$index]#init_}"
+    ${init_functions[$index]}
+done
+
+function main() {
+    # Read Password
+    read -r -s -p "${BOLD}${GREEN}[initUbuntu]${RESET} Please enter password for $USER: ${RESET}" PASS && echo ""
+    # Check SUDO privilege
+    (echo "$PASS" | sudo -S -l -U "$USER" | grep -q 'may run the following') ||
+        (ilog "initUbuntu needs SUDO privilege to run. Make sure you have it." "$BOLD" "$RED" && exit 1)
+    if [[ $isDependency == "True" ]]; then
+        install_dependency
+    fi
+}
+
+main
