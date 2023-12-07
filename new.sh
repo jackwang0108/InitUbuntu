@@ -8,7 +8,6 @@ PORT=7890
 # Define Global Variable
 dir=$(dirname "$(readlink -f "$0")")
 cleaned="False"
-_success="False"
 exitFail=1
 exitSucc=0
 
@@ -464,10 +463,8 @@ function install_dependency() {
 
 function init_clash() {
     ilog "=> Initializing Clash" "$BOLD" "$GREEN"
-    _success="False"
     _home="$HOME"/opt/clash
     # Clean up
-    proxy_off
     if [[ -d $_home ]]; then
         cleaned="False"
         cleanup "clash" "$_home" "clash.service"
@@ -493,7 +490,9 @@ function init_clash() {
     fi
 
     # Download executable
+    ilog "Downloading executables" "${NORMAL}" "${GREEN}"
     git clone https://gitee.com/jackwangsh/cbackup.git "$_home/src"
+    rm -rf "$_home"/src/.git
     # TODO: extract according to system
     gzip -d "$_home/src/new-linux-amd64-v1.18.0.gz"
     cp "$_home/src/new-linux-amd64-v1.18.0" "$_home/clash"
@@ -541,8 +540,35 @@ function init_clash() {
     return 0
 }
 
-function init_test1() {
-    echo "=> init_test1"
+function init_qv2ray() {
+    ilog "=> Initializing Clash" "$BOLD" "$GREEN"
+    _home="$HOME"/opt/qv2ray
+    _config="$HOME"/.config/qv2ray
+    # Clean up
+    if [[ -d $_home ]]; then
+        cleaned="False"
+        cleanup "qv2ray" "$_home" ""
+        if [[ $cleaned == "False" ]]; then
+            return 1
+        fi
+        [[ -d $_config ]] && rm -rf "$_config"
+    fi
+    # Dependency
+    ilog "Downloading dependencies" "${NORMAL}" "${GREEN}"
+    echo "$PASS" | sudo -S apt install -y libfuse2
+
+    # Download executable
+    ilog "Downloading executables" "${NORMAL}" "${GREEN}"
+    git clone https://gitee.com/jackwangsh/newnew.git "$_home"
+    rm -rf "$_home"/.git
+    chmod +x "$_home"/Qv2ray-v2.7.0-linux-x64.AppImage
+    unzip -d "$_home"/v2ray "$_home"/new.zip
+
+    # Plugins
+    ilog "Setting up plugins" "${NORMAL}" "${GREEN}"
+    mkdir -p "$_config"/plugins
+    cp "$_home"/QvPlugin-* "$_config"/plugins
+    return 0
 }
 
 function init_test2() {
@@ -562,6 +588,7 @@ function main() {
         (ilog "initUbuntu needs SUDO privilege to run. Make sure you have it." "$BOLD" "$RED" && exit 1)
     echo ""
     # main function
+    proxy_off
     fail_tools=()
     success_tools=()
     if [[ $isChangeSource == "True" ]]; then
@@ -573,9 +600,11 @@ function main() {
             if ${init_functions[$index]}; then
                 success_tools+=("${init_functions[$index]#init_}")
                 ilog "Setup ${init_functions[$index]#init_} successed, enjoy!" "${BOLD}" "${GREEN}"
+                printf '%*s\n' "$(tput cols)" "-"
             else
                 fail_tools+=("${init_functions[$index]#init_}")
                 ilog "Setup ${init_functions[$index]#init_} failed, please try later!" "${BOLD}" "${RED}"
+                printf '%*s\n' "$(tput cols)" "-"
             fi
         done
 
