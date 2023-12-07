@@ -200,7 +200,7 @@ function show_menu() {
             done
             echo "Tools to be installed: "
             for index in "${functions_to_run[@]}"; do
-                printf "\t%02d %s\n" "$index" "${init_functions[$index]#init_}"
+                printf "%s\n" "${init_functions[$index]#init_}"
             done | pr -o 8 -3 -t -w "$(tput cols)"
             break
         done
@@ -285,9 +285,9 @@ function systemd_add() {
     # Check Status
     status=$(systemctl status "$_unit_name" --no-pager)
     if [[ $status =~ "Active: active" ]]; then
-        echo "True"
+        return 0
     else
-        echo "False"
+        return 1
     fi
 }
 
@@ -526,7 +526,12 @@ function init_clash() {
     killall -q clash
 
     # Add to systemd and test again
-    sleep 5s && systemd_add "${dir}"/clash.service
+    sleep 5s
+    if systemd_add "${dir}"/clash.service; then
+        ilog "Add systemd service $_systemd success" "${NORMAL}" "${NORMAL}"
+    else
+        ilog "Add systemd service $_systemd fail" "${NORMAL}" "${NORMAL}"
+    fi
     if curl -# www.google.com >/dev/null 2>&1; then
         ilog "Clash test passed" "${NORMAL}" "${GREEN}"
     else
@@ -581,11 +586,11 @@ function main() {
         echo "======================== Summary ========================"
         ilog "Successed Tools: " "${NORMAL}" "${GREEN}"
         for index in "${!success_tools[@]}"; do
-            printf "\t%02d %s\n" "$index" "${success_tools[$index]}"
+            printf "%s\n" "${success_tools[$index]}"
         done | pr -o 8 -3 -t -w "$(tput cols)"
         ilog "Failed Tools: " "${NORMAL}" "${RED}"
         for index in "${!fail_tools[@]}"; do
-            printf "\t%02d %s\n" "$index" "${fail_tools[$index]}"
+            printf "%s\n" "${fail_tools[$index]}"
         done | pr -o 8 -3 -t -w "$(tput cols)"
     fi
 }
