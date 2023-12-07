@@ -6,6 +6,7 @@ PORT=7890
 
 # ================================ Scripts ================================
 # Define Global Variable
+rc="False"
 dir=$(dirname "$(readlink -f "$0")")
 cleaned="False"
 exitFail=1
@@ -98,6 +99,9 @@ function proxy_on() {
     export HTTP_PROXY=http://127.0.0.1:${PORT}
     export HTTPS_PROXY=http://127.0.0.1:${PORT}
     export ALL_PROXY=socks5://127.0.0.1:${PORT}
+    git config --global https.proxy http://127.0.0.1:${PORT}
+    git config --global https.proxy https://127.0.0.1:${PORT}
+    alias wget='wget -e http_proxy=127.0.0.1:${PORT} -e https_proxy=127.0.0.1:${PORT}'
 }
 
 # proxy_off - Unset proxy environment variables
@@ -113,6 +117,9 @@ function proxy_off() {
     unset HTTP_PROXY
     unset HTTPS_PROXY
     unset ALL_PROXY
+    git config --global --unset http.proxy
+    git config --global --unset https.proxy
+    [[ $(type wget) =~ "alias" ]] && unalias wget
 }
 
 # show_menu() - Displays a menu and prompts the user to select tools.
@@ -237,10 +244,8 @@ function usage() {
 #   The path of the selected shell configuration file.
 #
 # Example:
-#   rc_path=$(get_shell_rc)
-#   echo "Shell configuration file path: $rc_path"
-#   # Or
-#   echo "PATH=${PATH}:${HOME}/opt/clash">>$(get_shell_rc)
+#   get_shell_rc
+#   echo "Shell configuration file path: $rc"
 function get_shell_rc() {
     all_shell=("bash" "zsh")
     for i in "${!all_shell[@]}"; do
@@ -257,7 +262,6 @@ function get_shell_rc() {
             break
         fi
     done
-    echo "$rc"
 }
 
 # systemd_add - Add a unit file to systemd service and start it
@@ -325,6 +329,7 @@ function systemd_remove() {
 #   _name - The name of the tool to clean up.
 #   _home - The path to the associated files of the process.
 #   _systemd - (Optional) The name of the systemd unit for the process. Defaults to "False".
+#   _pname - (Optional) The name of the process to kill. Defaults to "False".
 #
 # Returns:
 #   The cleanup status, either "True" or "False".
@@ -336,6 +341,7 @@ function cleanup() {
     _name=$1
     _home=$2
     _systemd="${3:-"False"}"
+    _pname=${4:-"False"}
     _force="False"
     # check if already initialized
     if [[ -d $_home ]]; then
@@ -368,8 +374,10 @@ function cleanup() {
             fi
         fi
         # kill process
-        ilog "Killing process: $_name" "${NORMAL}" "${NORMAL}"
-        echo "$PASS" | sudo -S killall -q "$_name"
+        if [[ $_pname != "False" ]]; then
+            ilog "Killing process: $_pname" "${NORMAL}" "${NORMAL}"
+            echo "$PASS" | sudo -S killall -q "$_pname"
+        fi
         # remove files
         ilog "Removing files: $_home" "${NORMAL}" "${NORMAL}"
         echo "$PASS" | sudo -S rm -rf "$_home"
@@ -461,13 +469,43 @@ function install_dependency() {
     echo "$PASS" | sudo -S apt install -y ${tools}
 }
 
+function add_proxy() {
+    ilog "Add proxy_on and proxy_off to shell runtime configuration (rc)" "${NORMAL}" "${GREEN}"
+    get_shell_rc
+    if ! grep -q "function proxy_on" "$rc"; then
+        echo "
+function proxy_on() {
+    echo 'Terminal Proxy is ON'
+    export HTTP_PROXY=http://127.0.0.1:${PORT}
+    export HTTPS_PROXY=http://127.0.0.1:${PORT}
+    export ALL_PROXY=socks://127.0.0.1:${PORT}
+    git config --global https.proxy http://127.0.0.1:${PORT}
+    git config --global https.proxy https://127.0.0.1:${PORT}
+    alias wget=\"wget -e http_proxy=127.0.0.1:${PORT} -e https_proxy=127.0.0.1:${PORT}\"
+}" >>"$rc"
+    fi
+    if ! grep -q "function proxy_off" "${rc}"; then
+        # 函数不存在，添加函数到.bashrc文件
+        echo "
+function proxy_off() {
+    echo 'Terminal Proxy is OFF'
+    unset HTTP_PROXY
+    unset HTTPS_PROXY
+    unset ALL_PROXY
+    git config --global --unset http.proxy
+    git config --global --unset https.proxy
+    unalias wget
+}" >>"${rc}"
+    fi
+}
+
 function init_clash() {
     ilog "=> Initializing Clash" "$BOLD" "$GREEN"
     _home="$HOME"/opt/clash
     # Clean up
     if [[ -d $_home ]]; then
         cleaned="False"
-        cleanup "clash" "$_home" "clash.service"
+        cleanup "clash" "$_home" "clash.service" "clash"
         if [[ $cleaned == "False" ]]; then
             return 1
         fi
@@ -511,6 +549,9 @@ function init_clash() {
     echo "Click ${GREEN}http://localhost:9090/ui${RESET} or ${GREEN}http://$(curl -s ifconfig.me)/ui${RESET} to login into dashboard"
     echo "Username: ${GREEN}ip:9090${RESET}, Password: ${GREEN}123456${RESET}"
 
+    # Add proxy to shell rc
+    add_proxy
+
     # Test
     "$_home/clash" -d "$_home" &
     sleep 5s
@@ -547,7 +588,7 @@ function init_qv2ray() {
     # Clean up
     if [[ -d $_home ]]; then
         cleaned="False"
-        cleanup "qv2ray" "$_home" ""
+        cleanup "qv2ray" "$_home" "" ""
         if [[ $cleaned == "False" ]]; then
             return 1
         fi
@@ -568,6 +609,123 @@ function init_qv2ray() {
     ilog "Setting up plugins" "${NORMAL}" "${GREEN}"
     mkdir -p "$_config"/plugins
     cp "$_home"/QvPlugin-* "$_config"/plugins
+    return 0
+}
+
+function init_zsh() {
+    ilog "=> Initializing zsh" "$BOLD" "$GREEN"
+    # Test Proxy
+    proxy_on
+    if curl -# www.google.com >/dev/null 2>&1; then
+        ilog "Proxy test passed" "${NORMAL}" "${NORMAL}"
+    else
+        ilog "Proxy test failed. To initialize zsh, you must have proxy on. Initialize clash first" "${BOLD}" "${RED}"
+    fi
+    # Download zsh
+    ilog "Downloading zsh" "${NORMAL}" "${GREEN}"
+    echo "$PASS" | sudo -S apt install -y zsh
+
+    # Cleanup oh-my-zsh
+    _home="${HOME}"/.oh-my-zsh
+    if [[ -d $_home ]]; then
+        cleaned="False"
+        cleanup "oh-my-zsh" "$_home" "" ""
+        if [[ $cleaned == "False" ]]; then
+            return 1
+        fi
+        [[ -d $_config ]] && rm -rf "$_config"
+    fi
+
+    # Download oh-my-zsh
+    ilog "Downloading oh-my-zsh" "${NORMAL}" "${GREEN}"
+    _home="${HOME}"/.oh-my-zsh
+    _attempt=1
+    while [ $_attempt -le 5 ]; do
+        # 检查curl的退出状态码
+        if ! (echo n | sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)"); then
+            # 删除下载到一半的文件
+            ilog "Retry... ${_attempt}" "${NORMAL}" "${YELLOW}"
+            rm -rf "$_home"
+            _attempt+=1
+        else
+            break
+        fi
+        # 等待一段时间再进行下一次尝试
+        sleep 1
+    done
+    if [[ $_attempt -gt 5 ]]; then
+        ilog "oh-my-zsh download failed!" "${BOLD}" "${RED}"
+        proxy_off
+        return 1
+    fi
+
+    # Powerlevel10k
+    ilog "Setting up PowerLevel-10K" "${NORMAL}" "${GREEN}"
+    git clone --depth=1 https://github.com/romkatv/powerlevel10k.git "${ZSH_CUSTOM:-$HOME/.oh-my-zsh/custom}/themes/powerlevel10k"
+    sed -i 's/ZSH_THEME=.*/ZSH_THEME="powerlevel10k\/powerlevel10k"/' ~/.zshrc
+    echo "
+# To customize prompt, run \$(p10k configure) or edit ~/.p10k.zsh.
+[[ ! -f ~/.p10k.zsh ]] || source ~/.p10k.zsh
+" >>~/.zshrc
+    cp "${dir}/.p10k.zsh" "${HOME}"
+
+    # Zsh Plugins
+    ilog "Setting up zsh plugins" "${NORMAL}" "${GREEN}"
+    # Default Plugins
+    sed -i "s/plugins=(/plugins=(copypath copyfile copybuffer sudo /" ~/.zshrc
+    # Third Party Plugins
+    _plugins=(
+        "zsh-autosuggestions"
+        "zsh-syntax-highlighting"
+        "zsh-history-substring-search"
+        "zsh-vi-mode"
+    )
+    _plugin_urls=(
+        "https://github.com/zsh-users/zsh-autosuggestions"
+        "https://github.com/zsh-users/zsh-syntax-highlighting.git"
+        "https://github.com/zsh-users/zsh-history-substring-search"
+        "https://github.com/jeffreytse/zsh-vi-mode.git"
+    )
+    for i in "${!_plugins[@]}"; do
+        git clone --depth=1 "${_plugin_urls[$i]}" "${ZSH_CUSTOM:-$HOME/.oh-my-zsh/custom}/plugins/${_plugins[$i]}"
+        sed -i "s/plugins=(/plugins=(${_plugins[$i]} /" ~/.zshrc
+        ilog "Zsh Plugin: ${_plugins[$i]} added" "${NORMAL}" "${GREEN}"
+    done
+    # Plugin configure
+    echo "
+# zsh-history-substring-search
+bindkey '^[[A' history-substring-search-up
+bindkey '^[[B' history-substring-search-down
+bindkey \"\$terminfo[kcuu1]\" history-substring-search-up
+bindkey \"\$terminfo[kcud1]\" history-substring-search-down
+bindkey -M emacs '^P' history-substring-search-up
+bindkey -M emacs '^N' history-substring-search-down
+export HISTORY_SUBSTRING_SEARCH_HIGHLIGHT_FOUND=(bg=red,fg=magenta,bold)
+
+# zsh-vi-mode
+ZVM_VI_INSERT_ESCAPE_BINDKEY=jj
+" >>~/.zshrc
+
+    # Download Font
+    ilog "Installing NerdFont: FiraMono" "${NORMAL}" "${GREEN}"
+    ilog "Downloading getnf" "${NORMAL}" "${NORMAL}"
+    [[ ! -f "${HOME}"/opt/getnf/getnf ]] && git clone https://github.com/ronniedroid/getnf.git "${HOME}"/opt/getnf
+    if ! wget -tries=5 -q --show-progress -e http_proxy=127.0.0.1:7890 -e https_proxy=127.0.0.1:7890 -P "${dir}" -c https://github.com/ryanoasis/nerd-fonts/releases/download/v3.1.1/FiraMono.zip; then
+        ilog "Mannually download NerdFont failed, you can try getnf in ${HOME}/opt/getnf to download NerdFont later!" "${BOLD}" "${RED}"
+        proxy_off
+        return 1
+    else
+        echo "$PASS" | sudo -S mkdir -p /usr/share/fonts/FiraMono
+        echo "$PASS" | sudo -S unzip -q "${dir}"/FiraMono.zip -d /usr/share/fonts/FiraMono
+        sudo chmod 744/usr/share/fonts/FiraMono/*.ttf
+        echo "$PASS" | sudo mkfontscale
+        echo "$PASS" | sudo mkfontdir
+        echo "$PASS" | sudo fc-cache -fv
+    fi
+
+    # Add proxy to shell rc
+    add_proxy
+    proxy_off
     return 0
 }
 
