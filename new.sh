@@ -122,6 +122,33 @@ function proxy_off() {
     [[ $(type wget) =~ "alias" ]] && unalias wget
 }
 
+# git_clone - Clone git repository and give error
+#
+# This function clones a Git repository from a specified URL to a specified directory.
+#
+# Parameters:
+#   $1 - The URL of the Git repository to clone.
+#   $2 - The directory where the repository will be cloned into.
+#
+# Example:
+#   git_clone "https://github.com/example/repo.git" "/path/to/clone"
+#
+# Returns:
+#   0 - If the cloning process is successful.
+#   1 - If the cloning process fails, possibly due to a proxy issue.
+function git_clone() {
+    local _url=$1
+    local _dir=$2
+    local _rname=""
+    _rname=$(basename "$1")
+    ilog "${RESET}git clone ${GREEN}${_rname}${RESET} to ${_dir}"
+    if ! git clone --depth=1 "$_url" "$_dir"; then
+        ilog "git clone failed! This may because your proxy didn't work. Change to another proxy node and try again!" "${BOLD}" "${RED}"
+        return 1
+    fi
+    return 0
+}
+
 # show_menu() - Displays a menu and prompts the user to select tools.
 #
 # The function supports both TUI (Text-based User Interface) and interactive modes.
@@ -357,7 +384,7 @@ function cleanup() {
                     _force="False"
                     break
                 else
-                    ilog "Invalid option: ${choice}, reinitialized? [y/n]"
+                    ilog "Invalid option: ${choice}, please input [y/n]" "${NORMAL}" "${YELLOW}"
                 fi
             done
         fi
@@ -661,7 +688,10 @@ function init_zsh() {
 
     # Powerlevel10k
     ilog "Setting up PowerLevel-10K" "${NORMAL}" "${GREEN}"
-    git clone --depth=1 https://github.com/romkatv/powerlevel10k.git "${ZSH_CUSTOM:-$HOME/.oh-my-zsh/custom}/themes/powerlevel10k"
+    if ! git_clone https://github.com/romkatv/powerlevel10k.git "${ZSH_CUSTOM:-$HOME/.oh-my-zsh/custom}/themes/powerlevel10k"; then
+        ilog "Download PowerLevel-10K Failed!" "${BOLD}" "${NORMAL}"
+        return 1
+    fi
     sed -i 's/ZSH_THEME=.*/ZSH_THEME="powerlevel10k\/powerlevel10k"/' ~/.zshrc
     echo "
 # To customize prompt, run \$(p10k configure) or edit ~/.p10k.zsh.
@@ -687,7 +717,9 @@ function init_zsh() {
         "https://github.com/jeffreytse/zsh-vi-mode.git"
     )
     for i in "${!_plugins[@]}"; do
-        git clone --depth=1 "${_plugin_urls[$i]}" "${ZSH_CUSTOM:-$HOME/.oh-my-zsh/custom}/plugins/${_plugins[$i]}"
+        if ! git_clone "${_plugin_urls[$i]}" "${ZSH_CUSTOM:-$HOME/.oh-my-zsh/custom}/plugins/${_plugins[$i]}"; then
+            ilog "Download ${_plugins[$i]} failed!" "${BOLD}" "${RED}"
+        fi
         sed -i "s/plugins=(/plugins=(${_plugins[$i]} /" ~/.zshrc
         ilog "Zsh Plugin: ${_plugins[$i]} added" "${NORMAL}" "${GREEN}"
     done
@@ -709,8 +741,10 @@ ZVM_VI_INSERT_ESCAPE_BINDKEY=jj
     # Download Font
     ilog "Installing NerdFont: FiraMono" "${NORMAL}" "${GREEN}"
     ilog "Downloading getnf" "${NORMAL}" "${NORMAL}"
-    [[ ! -f "${HOME}"/opt/getnf/getnf ]] && git clone https://github.com/ronniedroid/getnf.git "${HOME}"/opt/getnf
-    if ! wget -tries=5 -q --show-progress -e http_proxy=127.0.0.1:7890 -e https_proxy=127.0.0.1:7890 -P "${dir}" -c https://github.com/ryanoasis/nerd-fonts/releases/download/v3.1.1/FiraMono.zip; then
+    if ! git_clone https://github.com/ronniedroid/getnf.git "${HOME}"/opt/getnf; then
+        ilog "Download getnf failed" "${BOLD}" "${RED}"
+    fi
+    if ! wget -c -q --show-progress --tries=5 -P "${dir}" -e http_proxy=127.0.0.1:7890 -e https_proxy=127.0.0.1:7890 https://github.com/ryanoasis/nerd-fonts/releases/download/v3.1.1/FiraMono.zip; then
         ilog "Mannually download NerdFont failed, you can try getnf in ${HOME}/opt/getnf to download NerdFont later!" "${BOLD}" "${RED}"
         proxy_off
         return 1
@@ -729,8 +763,104 @@ ZVM_VI_INSERT_ESCAPE_BINDKEY=jj
     return 0
 }
 
-function init_test2() {
-    echo "=> init_test2"
+function init_frp() {
+    ilog "=> Initializing zsh" "$BOLD" "$GREEN"
+    while true; do
+        read -r -p "${BLUE}Install client or server? [c/s]: ${GREEN}" choice && echo -n "${RESET}"
+        if [[ ${choice^^} == "C" ]]; then
+            _name="frpc"
+            _home="${HOME}"/opt/frpc
+            _systemd="frpc.service"
+            break
+        elif [[ ${choice^^} == "S" ]]; then
+            _name="frps"
+            _home="${HOME}"/opt/frps
+            _systemd="frps.service"
+            break
+        else
+            ilog "Invalid option: ${choice}, please input [c/s]" "${NORMAL}" "${YELLOW}"
+        fi
+    done
+
+    # Cleanup
+    if [[ -d $_home ]]; then
+        cleaned="False"
+        cleanup "$_name" "$_home" "$_systemd" "$_name"
+        if [[ $cleaned == "False" ]]; then
+            return 1
+        fi
+    fi
+
+    # Download File
+    proxy_on
+    ilog "Downloading $_name" "${NORMAL}" "${GREEN}"
+    if ! wget -c -q --show-progress --tries=5 -P "$_home" -e http_proxy=127.0.0.1:${PORT} -e https_proxy=127.0.0.1:${PORT} https://github.com/fatedier/frp/releases/download/v0.52.3/frp_0.52.3_linux_amd64.tar.gz; then
+        ilog "Mannually download $_name failed, this may because of your proxy. Check your proxy and try later!" "${BOLD}" "${RED}"
+        proxy_off
+        return 1
+    fi
+    tar xzvf "$_home"/frp_0.52.3_linux_amd64.tar.gz -C "$_home"
+    [[ $_name == "frpc" ]] && rm "$_home/frp_0.52.3_linux_amd64/${_name/c/s}*"
+    [[ $_name == "frps" ]] && rm "$_home/frp_0.52.3_linux_amd64/${_name/s/c}*"
+    cp "${dir}/${_name}.ini" "$_home"
+    ln -s "$_home"/frp_0.52.3_linux_amd64 "$_home"/bin
+
+    if systemd_add "${dir}/${_name}.service"; then
+        ilog "Add systemd service $_systemd success" "${NORMAL}" "${NORMAL}"
+    else
+        ilog "Add systemd service $_systemd fail" "${NORMAL}" "${NORMAL}"
+        return 1
+    fi
+    proxy_off
+    return 0
+}
+
+function init_tmux() {
+    ilog "=> Initializing tmux" "$BOLD" "$GREEN"
+    while true; do
+        read -r -p "${BLUE}Using oh-my-tmux or MyConfig? [o/m]: ${GREEN}" choice && echo -n "${RESET}"
+        if [[ ${choice^^} == "M" ]]; then
+            _which="MyConfig"
+            _home="${HOME}"/opt/tmux
+            break
+        elif [[ ${choice^^} == "O" ]]; then
+            _which="oh-my-tmux"
+            _home="${HOME}"/opt/tmux/oh-my-tmux
+            break
+        else
+            ilog "Invalid option: ${choice}, please input [o/m]" "${NORMAL}" "${YELLOW}"
+        fi
+    done
+
+    # Cleanup
+    if [[ -d $_home ]]; then
+        cleaned="False"
+        cleanup "tmux" "$_home" "" ""
+        if [[ $cleaned == "False" ]]; then
+            return 1
+        fi
+        rm -rf "${HOME}"/.tmux.conf
+        rm -rf "${HOME}"/.tmux.conf.local
+    fi
+
+    mkdir -p "$_home"
+    if [[ $_which == "MyConfig" ]]; then
+        ilog "Coping MyConfig configuration" "${NORMAL}" "${GREEN}"
+        cp "${dir}"/.tmux.conf "$_home"
+        ln -s -f "$_home"/.tmux.conf "${HOME}"/.tmux.conf
+    else
+        proxy_on
+        ilog "Downloading oh-my-tmux configuration" "${NORMAL}" "${GREEN}"
+        if ! git_clone https://github.com/gpakosz/.tmux.git "$_home"; then
+            ilog "Download oh-my-tmux failed" "${BOLD}" "${RED}"
+            return 1
+        fi
+        cp "${dir}"/.tmux.conf.local "$_home"
+        ln -s -f "$_home"/.tmux.conf.local "${HOME}"
+        proxy_off
+    fi
+
+    return 0
 }
 
 # Show menu and get user input
@@ -770,7 +900,10 @@ function main() {
         echo ""
         echo ""
         echo ""
-        echo "======================== Summary ========================"
+        content="Summary"
+        hlen=$((($(tput cols) - ${#content}) / 2 - 1))
+        delimiter=$(printf '%*s\n' $hlen | tr ' ' '-')
+        echo "${delimiter} ${content} ${delimiter}"
         ilog "Successed Tools: " "${NORMAL}" "${GREEN}"
         for index in "${!success_tools[@]}"; do
             printf "%s\n" "${success_tools[$index]}"
