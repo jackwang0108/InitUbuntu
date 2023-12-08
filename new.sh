@@ -499,10 +499,11 @@ function install_dependency() {
 function add_proxy() {
     ilog "Add proxy_on and proxy_off to shell runtime configuration (rc)" "${NORMAL}" "${GREEN}"
     get_shell_rc
+    # Add proxy_on
     if ! grep -q "function proxy_on" "$rc"; then
         echo "
 function proxy_on() {
-    echo 'Terminal Proxy is ON'
+    echo \"Terminal Proxy is turned \$(tput setaf 2)\$(tput bold)ON\$(tput sgr0)\"
     export HTTP_PROXY=http://127.0.0.1:${PORT}
     export HTTPS_PROXY=http://127.0.0.1:${PORT}
     export ALL_PROXY=socks://127.0.0.1:${PORT}
@@ -511,17 +512,34 @@ function proxy_on() {
     alias wget=\"wget -e http_proxy=127.0.0.1:${PORT} -e https_proxy=127.0.0.1:${PORT}\"
 }" >>"$rc"
     fi
+    # Add proxy_off
     if ! grep -q "function proxy_off" "${rc}"; then
-        # 函数不存在，添加函数到.bashrc文件
         echo "
 function proxy_off() {
-    echo 'Terminal Proxy is OFF'
+    echo \"Terminal Proxy is turned \$(tput setaf 3)\$(tput bold)OFF\$(tput sgr0)\"
     unset HTTP_PROXY
     unset HTTPS_PROXY
     unset ALL_PROXY
     git config --global --unset http.proxy
     git config --global --unset https.proxy
     unalias wget
+}" >>"${rc}"
+    fi
+    # Add proxy_test
+    if ! grep -q "function proxy_test" "${rc}"; then
+        echo "
+function proxy_test() {
+    if [[ -z \$HTTP_PROXY ]] || [[ -z \$HTTPS_PROXY ]] || [[ -z \$ALL_PROXY ]]; then
+        echo \"Terminal Proxy is \$(tput setaf 3)\$(tput bold)OFF\$(tput sgr0) now\"
+        return 0
+    else
+        echo \"Terminal Proxy is \$(tput setaf 2)\$(tput bold)ON\$(tput sgr0) now\"
+    fi
+    if curl -# www.google.com >/dev/null 2>&1; then
+        echo \"Terminal Proxy test \$(tput setaf 2)\$(tput bold)PASSED\$(tput sgr0)\"
+    else
+        echo \"Terminal Proxy test \$(tput setaf 3)\$(tput bold)FAILED\$(tput sgr0), please change to another proxy node\"
+    fi
 }" >>"${rc}"
     fi
 }
@@ -855,8 +873,9 @@ function init_tmux() {
             ilog "Download oh-my-tmux failed" "${BOLD}" "${RED}"
             return 1
         fi
-        cp "${dir}"/.tmux.conf.local "$_home"
-        ln -s -f "$_home"/.tmux.conf.local "${HOME}"
+        cp "${dir}"/.tmux.conf.local "$_home"/.tmux.conf.local
+        ln -s -f "$_home"/.tmux.conf "${HOME}"/.tmux.conf
+        ln -s -f "$_home"/.tmux.conf.local "${HOME}"/.tmux.conf.local
         proxy_off
     fi
 
