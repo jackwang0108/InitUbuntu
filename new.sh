@@ -444,7 +444,10 @@ if [[ $isDependency != "True" ]]; then
     [[ -z $isWget ]] && _not_ok="True" ilog "Dependency wget is not installed on your system. Use -d option to install dependencies" "${BOLD}" "${RED}"
     [[ -z $isCurl ]] && _not_ok="True" ilog "Dependency curl is not installed on your system. Use -d option to install dependencies" "${BOLD}" "${RED}"
     [[ -z $isDialog ]] && _not_ok="True" ilog "Dependency dialog is not installed on your system. Use -d option to install dependencies" "${BOLD}" "${RED}"
-    [[ $_not_ok == "True" ]] && ilog "Dependcies are not installed, exit." "${BOLD}" "${RED}" && exit "$exitFail"
+    if [[ $_not_ok == "True" ]]; then
+        ilog "Dependcies are not installed, exit." "${BOLD}" "${RED}"
+        exit "$exitFail"
+    fi
 fi
 
 # ============================= init Functions =============================
@@ -920,8 +923,10 @@ function main() {
     # Read Password
     read -r -s -p "${BOLD}${GREEN}[initUbuntu]${RESET} Please enter password for $USER: ${RESET}" PASS && echo ""
     # Check SUDO privilege
-    (echo "$PASS" | sudo -S -l -U "$USER" | grep -q 'may run the following') ||
-        (ilog "initUbuntu needs SUDO privilege to run. Make sure you have it." "$BOLD" "$RED" && exit 1)
+    if ! (echo "$PASS" | sudo -S -l -U "$USER" | grep -q '(ALL : ALL) ALL'); then
+        ilog "initUbuntu needs SUDO privilege to run. Make sure you have it." "$BOLD" "$RED"
+        exit "$exitFail"
+    fi
     echo ""
     # main function
     proxy_off
