@@ -910,8 +910,117 @@ function init_tmux() {
 }
 
 function init_rust() {
-    ilog "=> Initializing tmux" "$BOLD" "$GREEN"
+    ilog "=> Initializing rust" "$BOLD" "$GREEN"
+    # Download and install
     proxy_on
+    if ! (curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh); then
+        ilog "Doanload rust failed, this may because of your proxy. Check your proxy and try later!" "${BOLD}" "${RED}"
+        proxy_off
+        return 1
+    fi
+    # Rust config
+    get_shell_rc
+    if ! grep -q "Rust" "$rc"; then
+        echo "
+# Rust
+export PATH=\"\$HOME/.cargo/bin:\${PATH}\"
+export CARGO_TARGET_DIR=\"\$HOME/.cargo\"
+" >>"${rc}"
+    fi
+    proxy_off
+    return 0
+}
+
+function init_nodejs() {
+    ilog "=> Initializing NodeJS" "$BOLD" "$GREEN"
+    _home="${HOME}"/opt/nodejs
+
+    # Cleanup NodeJS
+    if [[ -d $_home ]]; then
+        cleaned="False"
+        cleanup "NodeJS" "$_home" "" ""
+        if [[ $cleaned == "False" ]]; then
+            return 1
+        fi
+    fi
+
+    # Get NodeJS Version
+    NODE_MAJOR=""
+    node_versions=("16" "18" "20" "21")
+    for i in "${!node_versions[@]}"; do
+        printf "%02d) v%02d.x\n" "$((i))" "${node_versions[$i]}"
+    done | pr -o 8 -3 -t -w "$(tput cols)"
+    while true; do
+        read -r -p "${BLUE}Select a NodeJS Version to install (e.g. 1): ${GREEN}" choice && echo -n "${RESET}"
+        if ((0 <= choice && choice <= ${#node_versions[@]})); then
+            NODE_MAJOR=${node_versions[$choice]}
+            break
+        else
+            ilog "Invalid Option: $choice. Try again." "${BOLD}" "${YELLOW}"
+        fi
+    done
+
+    if [[ $NODE_MAJOR != "21" ]]; then
+        NODE_VERSION=${NODE_MAJOR}.9.0
+        ilog "Installing v${NODE_MAJOR}.9.0 by default" "${NORMAL}" "${GREEN}"
+    else
+        NODE_VERSION=${NODE_MAJOR}.4.0
+        ilog "Installing v${NODE_MAJOR}.4.0 by default" "${NORMAL}" "${GREEN}"
+    fi
+
+    # Install User NodeJS
+    # Download
+    proxy_on
+    if ! wget -c -q --show-progress --tries=5 -P "$_home" -e http_proxy=127.0.0.1:${PORT} -e https_proxy=127.0.0.1:${PORT} "https://nodejs.org/dist/v${NODE_VERSION}/node-v${NODE_VERSION}-linux-x64.tar.xz"; then
+        ilog "Mannually download NodeJS failed, this may because of your proxy. Check your proxy and try later!" "${BOLD}" "${RED}"
+        proxy_off
+        return 1
+    fi
+    tar xJvf "$_home/node-v${NODE_VERSION}-linux-x64.tar.xz" -C "$_home"
+    ln -s "$_home/node-v${NODE_VERSION}-linux-x64/bin" "${_home}/bin"
+    ln -s "$_home/node-v${NODE_VERSION}-linux-x64/include" "${_home}/include"
+    ln -s "$_home/node-v${NODE_VERSION}-linux-x64/lib" "${_home}/lib"
+    ln -s "$_home/node-v${NODE_VERSION}-linux-x64/share" "${_home}/share"
+
+    # NodeJs Config
+    get_shell_rc
+    if ! grep -q "NodeJS" "$rc"; then
+        echo "
+# NodeJS, NPM
+export PATH=$_home/node-v${NODE_VERSION}-linux-x64/bin:\${PATH}
+" >>"${rc}"
+    fi
+
+    # Install Root NodeJS
+    echo "$PASS" | sudo -S apt install -y ca-certificates curl gnupg
+    echo "$PASS" | sudo -S mkdir -p /etc/apt/keyrings
+    curl -fsSL https://deb.nodesource.com/gpgkey/nodesource-repo.gpg.key | sudo gpg --dearmor -o /etc/apt/keyrings/nodesource.gpg
+    echo "deb [signed-by=/etc/apt/keyrings/nodesource.gpg] https://deb.nodesource.com/node_$NODE_MAJOR.x nodistro main" | sudo tee /etc/apt/sources.list.d/nodesource.list
+    echo "$PASS" | sudo -S apt update
+    echo "$PASS" | sudo -S apt install nodejs -y
+
+    proxy_off
+    return 0
+}
+
+function init_yarn() {
+    ilog "=> Initializing Yarn" "$BOLD" "$GREEN"
+    proxy_on
+    # User Yarn
+    ilog "=> Install User Yarn" "$NORMAL" "$GREEN"
+    if ! npm install --global yarn; then
+        ilog "NodeJS is not install, please install NodeJS first" "${BOLD}" "${RED}"
+        proxy_off
+        return 1
+    fi
+    # Root Yarn
+    ilog "=> Install Root Yarn" "$NORMAL" "$GREEN"
+    if ! /usr/bin/npm install --global yarn; then
+        ilog "NodeJS is not install, please install NodeJS first" "${BOLD}" "${RED}"
+        proxy_off
+        return 1
+    fi
+    return 0
 }
 
 # Show menu and get user input
@@ -964,7 +1073,7 @@ function main() {
         for index in "${!fail_tools[@]}"; do
             printf "%s\n" "${fail_tools[$index]}"
         done | pr -o 8 -3 -t -w "$(tput cols)"
-        ilog "Don't forget to source your shell rc" "${NORMAL}" "${GREEN}"
+        ilog "Do not forget to source your shell rc" "${NORMAL}" "${GREEN}"
     fi
 }
 
