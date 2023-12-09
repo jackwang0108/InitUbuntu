@@ -20,9 +20,9 @@ RestartSec=5s
 # 指定了服务可以打开的最大文件描述符数，这里是1048576
 LimitNOFILE=1048576
 # 指定了要运行的命令或脚本的绝对路径
-ExecStart=/home/jack/opt/frps/bin/frps -c /home/jack/opt/frps/frps.ini
+ExecStart=/home/jack/opt/frps/bin/frps -c /home/jack/opt/frps/frps.toml
 # 服务重新加载（reload）时执行的命令或脚本。
-ExecReload=/home/jack/opt/frps/bin/frps -c /home/jack/opt/frps/frps.ini
+ExecReload=/home/jack/opt/frps/bin/frps -c /home/jack/opt/frps/frps.toml
 
 # 这个部分定义了服务的安装和启动配置
 [Install]

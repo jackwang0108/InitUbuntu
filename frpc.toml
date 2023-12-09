@@ -1,0 +1,17 @@
+# frpc.toml
+serverAddr = "#ADDR"
+serverPort = 6006
+auth.token = "#PASS"
+webServer.addr = "127.0.0.1"
+webServer.port = 7400
+webServer.user = "admin"
+webServer.password = "jack"
+
+[[proxies]]
+name = "MacOS-ssh"
+type = "tcp"
+localIP = "127.0.0.1"
+localPort = 22
+remotePort = 6000
+transport.useEncryption = true
+transport.useCompression = true

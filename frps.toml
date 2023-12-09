@@ -1,0 +1,8 @@
+# This configuration file is for reference only. Please do not use this configuration directly to run the program as it may have various issues.
+
+bindPort = 6006
+auth.method = "token"
+auth.token = "#PASS"
+webServer.port = 7500
+webServer.user = "admin"
+webServer.password = "jack"

@@ -337,6 +337,8 @@ function systemd_remove() {
     ilog "Removing systemd service unit: $_unit_name" "${NORMAL}" "${GREEN}"
     echo "$PASS" | sudo -S systemctl stop "$_unit_name"
     echo "$PASS" | sudo -S systemctl disable "$_unit_name"
+    echo "$PASS" | sudo -S rm /etc/systemd/system/"$_unit_name"
+    echo "$PASS" | sudo -S systemctl daemon-reload
 
     # Check Status
     status=$(systemctl status "$_name" --no-pager)
@@ -818,10 +820,32 @@ function init_frp() {
         return 1
     fi
     tar xzvf "$_home"/frp_0.52.3_linux_amd64.tar.gz -C "$_home"
-    [[ $_name == "frpc" ]] && rm "$_home/frp_0.52.3_linux_amd64/${_name/c/s}*"
-    [[ $_name == "frps" ]] && rm "$_home/frp_0.52.3_linux_amd64/${_name/s/c}*"
-    cp "${dir}/${_name}.ini" "$_home"
+    [[ $_name == "frpc" ]] && rm "$_home/frp_0.52.3_linux_amd64/${_name/c/s}" "$_home/frp_0.52.3_linux_amd64/${_name/c/s}.toml"
+    [[ $_name == "frps" ]] && rm "$_home/frp_0.52.3_linux_amd64/${_name/s/c}" "$_home/frp_0.52.3_linux_amd64/${_name/s/c}.toml"
+    cp "${dir}/${_name}.toml" "$_home"
     ln -s "$_home"/frp_0.52.3_linux_amd64 "$_home"/bin
+
+    # Configure
+    ilog "${_name} configuration" "${NORMAL}" "${GREEN}"
+    _addr=""
+    _pass=""
+    if [[ $_name == "frpc" ]]; then
+        while true; do
+            read -r -p "${BLUE}Please input your frp server address (default: X.X.X.X): ${GREEN}" _addr && echo -n "${RESET}"
+            if [[ $_addr =~ ^([0-9]{1,3}\.){3}[0-9]{1,3}$ ]]; then
+                break
+            fi
+            ilog "Invalid IP address, please check if the address is valid." "${NORMAL}" "${YELLOW}"
+        done
+    fi
+    while true; do
+        read -r -p "${BLUE}Please input your frp token: ${GREEN}" _pass && echo -n "${RESET}"
+        if [[ -n $_pass ]]; then
+            break
+        fi
+    done
+    sed -i "s/serverAddr = \"#ADDR\"/serverAddr = \"${_addr}\"/" "${_home}/${_name}".toml
+    sed -i "s/auth.token = \"#PASS\"/auth.token = \"${_pass}\"/" "${_home}/${_name}".toml
 
     if systemd_add "${dir}/${_name}.service"; then
         ilog "Add systemd service $_systemd success" "${NORMAL}" "${NORMAL}"
@@ -882,6 +906,11 @@ function init_tmux() {
     return 0
 }
 
+function init_rust() {
+    echo "$1" # arguments are accessible through $1, $2,...
+    # TODO 增加环境变量
+}
+
 # Show menu and get user input
 show_menu
 
@@ -918,7 +947,6 @@ function main() {
         # Print success and fail tools
         echo ""
         echo ""
-        echo ""
         content="Summary"
         hlen=$((($(tput cols) - ${#content}) / 2 - 1))
         delimiter=$(printf '%*s\n' $hlen | tr ' ' '-')
@@ -931,6 +959,7 @@ function main() {
         for index in "${!fail_tools[@]}"; do
             printf "%s\n" "${fail_tools[$index]}"
         done | pr -o 8 -3 -t -w "$(tput cols)"
+        ilog "Don't forget to source your shell rc" "${NORMAL}" "${GREEN}"
     fi
 }
 
