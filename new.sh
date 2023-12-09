@@ -787,7 +787,7 @@ ZVM_VI_INSERT_ESCAPE_BINDKEY=jj
 }
 
 function init_frp() {
-    ilog "=> Initializing zsh" "$BOLD" "$GREEN"
+    ilog "=> Initializing frp" "$BOLD" "$GREEN"
     while true; do
         read -r -p "${BLUE}Install client or server? [c/s]: ${GREEN}" choice && echo -n "${RESET}"
         if [[ ${choice^^} == "C" ]]; then
@@ -910,8 +910,8 @@ function init_tmux() {
 }
 
 function init_rust() {
-    echo "$1" # arguments are accessible through $1, $2,...
-    # TODO 增加环境变量
+    ilog "=> Initializing tmux" "$BOLD" "$GREEN"
+    proxy_on
 }
 
 # Show menu and get user input
