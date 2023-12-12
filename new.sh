@@ -712,7 +712,8 @@ function init_zsh() {
     # Powerlevel10k
     ilog "Setting up PowerLevel-10K" "${NORMAL}" "${GREEN}"
     if ! git_clone https://github.com/romkatv/powerlevel10k.git "${ZSH_CUSTOM:-$HOME/.oh-my-zsh/custom}/themes/powerlevel10k"; then
-        ilog "Download PowerLevel-10K Failed!" "${BOLD}" "${NORMAL}"
+        ilog "Download PowerLevel-10K failed! This may because your proxy didn't work. Change to another proxy node and try again!" "${BOLD}" "${RED}"
+        proxy_on
         return 1
     fi
     sed -i 's/ZSH_THEME=.*/ZSH_THEME="powerlevel10k\/powerlevel10k"/' ~/.zshrc
@@ -741,7 +742,8 @@ function init_zsh() {
     )
     for i in "${!_plugins[@]}"; do
         if ! git_clone "${_plugin_urls[$i]}" "${ZSH_CUSTOM:-$HOME/.oh-my-zsh/custom}/plugins/${_plugins[$i]}"; then
-            ilog "Download ${_plugins[$i]} failed!" "${BOLD}" "${RED}"
+            ilog "Download ${_plugins[$i]} failed! This may because your proxy didn't work. Change to another proxy node and try again!" "${BOLD}" "${RED}"
+            continue
         fi
         sed -i "s/plugins=(/plugins=(${_plugins[$i]} /" ~/.zshrc
         ilog "Zsh Plugin: ${_plugins[$i]} added" "${NORMAL}" "${GREEN}"
@@ -767,7 +769,7 @@ ZVM_VI_INSERT_ESCAPE_BINDKEY=jj
     if ! git_clone https://github.com/ronniedroid/getnf.git "${HOME}"/opt/getnf; then
         ilog "Download getnf failed" "${BOLD}" "${RED}"
     fi
-    if ! wget -c -q --show-progress --tries=5 -P "${dir}" -e http_proxy=127.0.0.1:7890 -e https_proxy=127.0.0.1:7890 https://github.com/ryanoasis/nerd-fonts/releases/download/v3.1.1/FiraMono.zip; then
+    if ! wget -c -q --show-progress --tries=5 -P "${dir}" -e http_proxy=127.0.0.1:${PORT} -e https_proxy=127.0.0.1:${PORT} https://github.com/ryanoasis/nerd-fonts/releases/download/v3.1.1/FiraMono.zip; then
         ilog "Mannually download NerdFont failed, you can try getnf in ${HOME}/opt/getnf to download NerdFont later!" "${BOLD}" "${RED}"
         proxy_off
         return 1
@@ -897,7 +899,8 @@ function init_tmux() {
         proxy_on
         ilog "Downloading oh-my-tmux configuration" "${NORMAL}" "${GREEN}"
         if ! git_clone https://github.com/gpakosz/.tmux.git "$_home"; then
-            ilog "Download oh-my-tmux failed" "${BOLD}" "${RED}"
+            ilog "Download oh-my-tmux! This may because your proxy didn't work. Change to another proxy node and try again!" "${BOLD}" "${RED}"
+            proxy_off
             return 1
         fi
         cp "${dir}"/.tmux.conf.local "$_home"/.tmux.conf.local
@@ -986,6 +989,7 @@ function init_nodejs() {
             return 1
         fi
     fi
+    mkdir -p ${_home}
 
     # Get NodeJS Version
     NODE_MAJOR=""
@@ -1063,6 +1067,425 @@ function init_yarn() {
         proxy_off
         return 1
     fi
+    return 0
+}
+
+function init_go() {
+    ilog "=> Initializing Go" "$BOLD" "$GREEN"
+    proxy_on
+    _home="${HOME}"/opt/go
+
+    # Cleanup Go
+    if [[ -d $_home ]]; then
+        cleaned="False"
+        cleanup "Go" "$_home" "" ""
+        echo "${PASS}" | sudo -S rm -rf /usr/local/go
+        if [[ $cleaned == "False" ]]; then
+            return 1
+        fi
+    fi
+
+    # Install Go
+    mkdir -p "${_home}"
+    if ! wget -c -q --show-progress --tries=5 -P "${_home}" -e http_proxy=127.0.0.1:${PORT} -e https_proxy=127.0.0.1:${PORT} https://go.dev/dl/go1.21.4.linux-amd64.tar.gz; then
+        ilog "Mannually download Go failed, this may because of your proxy. Check your proxy and try later!" "${BOLD}" "${RED}"
+        proxy_off
+        return 1
+    fi
+    echo "${PASS}" | sudo -S tar -C /usr/local -xzf "${_home}"/go1.21.4.linux-amd64.tar.gz
+
+    # Add Go Configuration
+    get_shell_rc
+    if ! grep -q "NodeJS" "$rc"; then
+        echo "
+# Go
+export PATH=\${PATH}:/usr/local/go/bin
+" >>"${rc}"
+    fi
+    proxy_off
+    return 0
+}
+
+function init_miniconda() {
+    ilog "=> Initializing Miniconda" "$BOLD" "$GREEN"
+    proxy_on
+    _home="${HOME}"/opt/miniconda
+
+    # Cleanup Miniconda
+    if [[ -d $_home ]]; then
+        cleaned="False"
+        cleanup "Miniconda" "$_home" "" ""
+        if [[ $cleaned == "False" ]]; then
+            return 1
+        fi
+    fi
+
+    # Download Miniconda
+    mkdir -p "${_home}"
+    if ! wget -c -q --show-progress --tries=5 -P "${_home}" -e http_proxy=127.0.0.1:${PORT} -e https_proxy=127.0.0.1:${PORT} https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh; then
+        ilog "Mannually download Miniconda failed, this may because of your proxy. Check your proxy and try later!" "${BOLD}" "${RED}"
+        proxy_off
+        return 1
+    fi
+    echo "${PASS}" | sudo -S tar -C /usr/local -xzf "${_home}"/go1.21.4.linux-amd64.tar.gz
+
+    # Install Miniconda
+    bash "${_home}"/Miniconda3-latest-Linux-x86_64.sh -b -u -p ~/miniconda3
+
+    # Add Miniconda Configuration
+    get_shell_rc
+    if ! grep -q "conda" "${rc}"; then
+        if [[ ${rc} =~ bash ]]; then
+            shell=bash
+        elif [[ ${rc} =~ zsh ]]; then
+            shell=zsh
+        fi
+        "${HOME}"/miniconda3/bin/conda init "${shell}"
+    fi
+
+    proxy_off
+    return 0
+}
+
+function init_glances() {
+    ilog "=> Initializing Glances" "$BOLD" "$GREEN"
+    _home="${HOME}"/opt/glances
+    _systemd="glances.service"
+
+    # Cleanup Glances
+    if [[ -d $_home ]]; then
+        cleaned="False"
+        cleanup "Glances" "$_home" "glances.service" ""
+        if [[ $cleaned == "False" ]]; then
+            return 1
+        fi
+    fi
+    mkdir -p "${_home}"
+
+    python -m pip install --user 'glances[all]' -i https://pypi.tuna.tsinghua.edu.cn/simple
+    cp "${dir}/${_systemd}" "${dir}"/glances.service.backup
+    sed -i "s,#USERHOME,$HOME,g" "${dir}/${_systemd}"
+    cp "${dir}"/glances.sh "${dir}"/glances.sh.backup
+    read -r -p "${BLUE}Please input user name for web-based monitor login (e.g. jack): ${GREEN}" _username && echo -n "${RESET}"
+    read -r -p "${BLUE}Please input user password for web-based monitor login (e.g. jack): ${GREEN}" _password && echo -n "${RESET}"
+    sed -i "s,#GLANCES,$(which glances),g" glances.sh
+    sed -i "s,#USER,${_username},g" glances.sh
+    sed -i "s,#PASS,${_password},g" glances.sh
+
+    if systemd_add "${dir}/${_systemd}"; then
+        ilog "Add systemd service $_systemd success" "${NORMAL}" "${NORMAL}"
+    else
+        ilog "Add systemd service $_systemd fail" "${NORMAL}" "${NORMAL}"
+        return 1
+    fi
+
+    return 0
+}
+
+function init_bottom() {
+    ilog "=> Initializing Bottom" "$BOLD" "$GREEN"
+    proxy_on
+
+    # Update rust index
+    ilog "Updating cargo index" "${NORMAL}" "${GREEN}"
+    if ! rustup update stable; then
+        ilog "Update cargo index failed! This may because your proxy didn't work. Change to another proxy node and try again!" "${BOLD}" "${RED}"
+        return 1
+    fi
+
+    # Install bottom
+    ilog "Installing bottom" "${NORMAL}" "${GREEN}"
+    if ! cargo install --locked --all-features bottom; then
+        ilog "Install bottom failed! This may because your proxy didn't work. Change to another proxy node and try again!" "${BOLD}" "${RED}"
+        return 1
+    fi
+
+    proxy_off
+    return 0
+}
+
+function init_fzf() {
+    ilog "=> Initializing Bottom" "$BOLD" "$GREEN"
+    # Download fzf
+    proxy_on
+    if ! git_clone https://github.com/junegunn/fzf.git "${HOME}"/.fzf; then
+        ilog "Download fzf failed! This may because your proxy didn't work. Change to another proxy node and try again!" "${BOLD}" "${RED}"
+        proxy_off
+        return 1
+    fi
+    # Install fzf
+    if ! ~/.fzf/install; then
+        ilog "Install fzf failed!" "${BOLD}" "${RED}"
+        proxy_off
+        return 1
+    fi
+
+    proxy_off
+    return 0
+}
+
+function init_zoxide() {
+    ilog "=> Initializing Zoxide" "$BOLD" "$GREEN"
+
+    # Download Zoxide
+    proxy_on
+    if curl -sS https://raw.githubusercontent.com/ajeetdsouza/zoxide/main/install.sh | bash; then
+        ilog "Download Zoxide failed! This may because your proxy didn't work. Change to another proxy node and try again!" "${BOLD}" "${RED}"
+        return 1
+    fi
+
+    # Zoxide Configuration
+    get_shell_rc
+    if ! grep -q "Zoxide" "${rc}"; then
+        echo "
+# Zoxide
+eval '\$(zoxide init \"${shell}\" --cmd cd)'
+" >>"${rc}"
+    fi
+
+    proxy_off
+    return 0
+}
+
+function init_bat() {
+    ilog "=> Initializing Bat" "$BOLD" "$GREEN"
+
+    # Update rust index
+    proxy_on
+    ilog "Updating cargo index" "${NORMAL}" "${GREEN}"
+    if ! rustup update stable; then
+        ilog "Update cargo index failed! This may because your proxy didn't work. Change to another proxy node and try again!" "${BOLD}" "${RED}"
+        proxy_off
+        return 1
+    fi
+
+    # Install bat
+    ilog "Installing bat" "${NORMAL}" "${GREEN}"
+    if ! cargo install --locked --all-features bat; then
+        ilog "Install bat failed! This may because your proxy didn't work. Change to another proxy node and try again!" "${BOLD}" "${RED}"
+        proxy_off
+        return 1
+    fi
+
+    # Bat Configuration
+    get_shell_rc
+    if ! grep -q "Bat" "${rc}"; then
+        echo "
+# Bat
+export BAT_CONFIG_PATH=${HOME}/.config/bat.conf
+export MANPAGER=\"sh -c 'col -bx | bat -l man -p'\"
+alias fzf="fzf --preview 'bat --color=always --style=numbers --line-range=:500 {}'"
+" >>"${rc}"
+    fi
+    cp "${dir}"/bat.conf ~/.config
+
+    # Download Bat-extras
+    _home="${HOME}"/opt/bat-extras
+    go install mvdan.cc/sh/v3/cmd/shfmt@latest
+    if ! git_clone https://github.com/eth-p/bat-extras.git "${_home}"/src; then
+        ilog "Download bat-extras failed! This may because your proxy didn't work. Change to another proxy node and try again!" "${BOLD}" "${RED}"
+        proxy_off
+        return 1
+    fi
+
+    # Install Bat-extras
+    "${_home}/src/build.sh" --install --prefix="${_home}"
+
+    if ! grep -q "Bat-extras" "${rc}"; then
+        echo "
+# Bat-extras
+export PATH=${_home}/bin:\${PATH}
+" >>"${rc}"
+    fi
+
+    proxy_off
+    return 0
+}
+
+function init_eza() {
+    ilog "=> Initializing eza" "$BOLD" "$GREEN"
+    _home="${HOME}"/opt/eza
+
+    # Cleanup eza
+    if [[ -d $_home ]]; then
+        cleaned="False"
+        cleanup "eza" "$_home" "" ""
+        if [[ $cleaned == "False" ]]; then
+            return 1
+        fi
+    fi
+    mkdir -p "${_home}"
+
+    # Update rust index
+    proxy_on
+    ilog "Updating cargo index" "${NORMAL}" "${GREEN}"
+    if ! rustup update stable; then
+        ilog "Update cargo index failed! This may because your proxy didn't work. Change to another proxy node and try again!" "${BOLD}" "${RED}"
+        proxy_off
+        return 1
+    fi
+
+    # Install eza
+    ilog "Installing eza" "${NORMAL}" "${GREEN}"
+    if ! cargo install --locked --all-features eza; then
+        ilog "Install bat failed! This may because your proxy didn't work. Change to another proxy node and try again!" "${BOLD}" "${RED}"
+        proxy_off
+        return 1
+    fi
+
+    # eza Configuration
+    get_shell_rc
+    if ! grep -q "eza" "${rc}"; then
+        echo "
+# eza
+alias ls=\"eza --icons=always\"                                          # 默认显示 icons
+alias ll=\"eza --icons=always --total-size --long --header\"             # 显示文件目录详情
+alias la=\"eza --icons=always --total-size --long --header --all\"       # 显示全部文件目录，包括隐藏文件
+alias lg=\"eza --icons=always --total-size --long --header --all --git\" # 显示详情的同时，附带 git 状态信息
+alias tree=\"eza --tree --icons=always --total-size\"                    # 替换 tree 命令
+" >>"${rc}"
+    fi
+
+    # eza community
+    if ! git_clone hhttps://github.com/eth-p/bat-extras.gitttps://github.com/eth-p/bat-extras.git "${_home}"; then
+        ilog "Download bat-extras failed! This may because your proxy didn't work. Change to another proxy node and try again!" "${BOLD}" "${RED}"
+        proxy_off
+        return 1
+    fi
+
+    # eza community configuration
+    get_shell_rc
+    if ! grep -q "eza-community" "${rc}"; then
+        echo "
+# eza-community
+export FPATH=\"${_home}/completions/zsh:\$FPATH\"
+" >>"${rc}"
+    fi
+
+    proxy_off
+    return 0
+}
+
+function init_fd() {
+    ilog "=> Initializing fd" "$BOLD" "$GREEN"
+
+    # Update rust index
+    proxy_on
+    ilog "Updating cargo index" "${NORMAL}" "${GREEN}"
+    if ! rustup update stable; then
+        ilog "Update cargo index failed! This may because your proxy didn't work. Change to another proxy node and try again!" "${BOLD}" "${RED}"
+        proxy_off
+        return 1
+    fi
+
+    # Install fd
+    ilog "Installing fd" "${NORMAL}" "${GREEN}"
+    if ! cargo install --locked --all-features fd; then
+        ilog "Install fd failed! This may because your proxy didn't work. Change to another proxy node and try again!" "${BOLD}" "${RED}"
+        proxy_off
+        return 1
+    fi
+
+    proxy_off
+    return 0
+}
+
+function init_ripgrep() {
+    ilog "=> Initializing ripgrep" "$BOLD" "$GREEN"
+
+    # Update rust index
+    proxy_on
+    ilog "Updating cargo index" "${NORMAL}" "${GREEN}"
+    if ! rustup update stable; then
+        ilog "Update cargo index failed! This may because your proxy didn't work. Change to another proxy node and try again!" "${BOLD}" "${RED}"
+        proxy_off
+        return 1
+    fi
+
+    # Install ripgrep
+    ilog "Installing ripgrep" "${NORMAL}" "${GREEN}"
+    if ! cargo install --locked --all-features ripgrep; then
+        ilog "Install fd ripgrep! This may because your proxy didn't work. Change to another proxy node and try again!" "${BOLD}" "${RED}"
+        proxy_off
+        return 1
+    fi
+
+    proxy_off
+    return 0
+}
+
+function init_todo() {
+    ilog "=> Initializing todo" "$BOLD" "$GREEN"
+    _home="${HOME}/opt/todo"
+
+    # Cleanup todo
+    if [[ -d $_home ]]; then
+        cleaned="False"
+        cleanup "todo" "$_home" "" ""
+        if [[ $cleaned == "False" ]]; then
+            return 1
+        fi
+    fi
+    mkdir -p "${_home}"
+
+    # Download todo
+    if ! wget -c -q --show-progress --tries=5 -P "${_home}" -e http_proxy=127.0.0.1:${PORT} -e https_proxy=127.0.0.1:${PORT} https://github.com/todotxt/todo.txt-cli/releases/download/v2.12.0/todo.txt_cli-2.12.0.tar.gz; then
+        ilog "Mannually download todo failed, this may because of your proxy. Check your proxy and try later!" "${BOLD}" "${RED}"
+        proxy_off
+        return 1
+    fi
+
+    # Install todo
+    tar xzvf "${_home}/todo.txt_cli-2.12.0.tar.gz" -C "${_home}"
+    mkdir -p "${_home}"/bin
+    mv "${_home}"/todo.txt_cli-2.12.0/todo.sh "${_home}"/bin
+
+    # Configure todo
+    mkdir -p "${HOME}"/.todo
+    mv "${_home}"/todo.txt_cli-2.12.0/todo.cfg "${HOME}"/.todo/config
+    # shellcheck disable=SC2016
+    sed -i '1s/export TODO_DIR=$(dirname "$0")/export TODO_DIR="\/home\/jack\/opt\/todo\/bin\/"/' "${HOME}"/.todo/config
+
+    get_shell_rc
+    if ! grep -q 'todo' "${rc}"; then
+        # shellcheck disable=SC2140
+        echo "
+# todo
+export PATH=\${PATH}:${_home}/bin
+alias todo="todo.sh"
+" >>"${rc}"
+    fi
+
+    proxy_off
+    return 0
+}
+
+function init_lazygit() {
+    ilog "=> Initializing lazygit" "$BOLD" "$GREEN"
+    _home="${HOME}/opt/lazygit"
+    LAZYGIT_VERSION=$(curl -s "https://api.github.com/repos/jesseduffield/lazygit/releases/latest" | grep -Po '"tag_name": "v\K[^"]*')
+    mkdir -p "${_home}/lazygit-${LAZYGIT_VERSION}"
+
+    # Download lazygit
+    if ! wget -c -q --show-progress --tries=5 -P "${_home}" -e http_proxy=127.0.0.1:${PORT} -e https_proxy=127.0.0.1:${PORT} "https://github.com/jesseduffield/lazygit/releases/latest/download/lazygit_${LAZYGIT_VERSION}_Linux_x86_64.tar.gz"; then
+        ilog "Mannually download lazygit failed, this may because of your proxy. Check your proxy and try later!" "${BOLD}" "${RED}"
+        proxy_off
+        return 1
+    fi
+    tar xzvf "${_home}/lazygit-${LAZYGIT_VERSION}.tar.gz" -C "${_home}/lazygit-${LAZYGIT_VERSION}"
+    ln -s "${_home}/lazygit-${LAZYGIT_VERSION}" "${_home}/bin"
+
+    # lazygit configuration
+    get_shell_rc
+    if ! grep -q 'Lazygit' "${rc}"; then
+        # shellcheck disable=SC2140
+        echo "
+# Lazygit
+export PATH=\${PATH}:${_home}/bin
+" >>"${rc}"
+    fi
+
+    proxy_off
     return 0
 }
 
