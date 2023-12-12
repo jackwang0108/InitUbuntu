@@ -1563,7 +1563,7 @@ function _init_riscvtools() {
 # Show menu and get user input
 show_menu
 
-# TODO: 修改剩下的三个函数
+# TODO: 修改剩下的三个函数, 增加init_lunarvim
 
 function main() {
     # Read Password
