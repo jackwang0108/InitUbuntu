@@ -1489,10 +1489,81 @@ export PATH=\${PATH}:${_home}/bin
     return 0
 }
 
+function _init_gptnextweb() {
+    echo "=> 正在配置ChatGPT NetWeb"
+    # 需要安装全局的nodejs, 需要给全局的nodejs添加源, 在init_nodejs中完成
+    input=""
+    while [[ "$input" != "w" && "$input" != "a" ]]; do
+        read -p "配置网页版/桌面应用版[w/a]: " -r input
+    done
+    if [[ $input == "w" ]]; then
+        echo "=> 正在配置网页版ChatGPT"
+        init_yarn
+        git clone https://github.com/Yidadaa/ChatGPT-Next-Web.git ~/opt/ChatGPT-Next-Web
+        # 安装yarn依赖
+        cd ~/opt/ChatGPT-Next-Web && $(which yarn) install
+        # 发布网页应用
+        read -p "请输入OPENAI_API_KEY: " -r OPENAI_API_KEY
+        read -p "请输入访问密码: " -r CODE
+        read -p "请输入启动端口: " -r PORT
+        OPENAI_API_KEY=$OPENAI_API_KEY CODE=$CODE PORT=$PORT $(which yarn) build
+        cd "${dir}" || return
+        # 配置开机自启动
+        echo "${password}" | sudo -S cp "${dir}"/ChatGPT.service /etc/systemd/system/ChatGPT.service
+        echo "${password}" | sudo -S systemctl daemon-reload
+        echo "${password}" | sudo -S systemctl enable ChatGPT.service
+        echo "${password}" | sudo -S systemctl start ChatGPT.service
+    elif [[ $input == 'a' ]]; then
+        # TODO: 完成桌面应用版本ChatGPT
+        echo "=> 暂时未实现"
+    fi
+}
+
+function _init_qemu() {
+    echo "=> 正在配置QEMU"
+    echo "${password}" | sudo -S apt install -y autoconf automake autotools-dev curl libmpc-dev libmpfr-dev libgmp-dev gawk build-essential bison flex texinfo gperf libtool patchutils bc zlib1g-dev libexpat-dev git libglib2.0-dev libfdt-dev libpixman-1-dev libncurses5-dev libncursesw5-dev
+    mkdir -p ~/opt/qemu
+    wget -c -P ~/opt/qemu https://download.qemu.org/qemu-7.2.0.tar.xz
+    tar xvJf qemu-7.2.0.tar.xz -C ~/opt/qemu
+    cd ~/opt/qemu/qemu-7.2.0 && export PREFIX="${HOME}/opt/qemu"
+    cd ~/opt/qemu/qemu-7.2.0 && ./configure --prefix="${PREFIX}" --target-list=riscv64-softmmu,riscv64-linux-user
+    make -j$(($(nproc) - 2))
+    make install
+    shell=$(choose_shell "选择初始化QEMU的Shell")
+    if [[ "$shell" == "bash" ]]; then
+        rc=~/.bashrc
+    else
+        rc=~/.zshrc
+    fi
+    # shellcheck disable=SC2016
+    printf 'export PATH=%s:"${PATH}"' "${PREFIX}"/bin >>"${rc}"
+}
+
+function _init_riscvtools() {
+    echo "=> 正在配置RISCV-Tools"
+    mkdir -p ~/opt/riscv-tools
+    git clone https://github.com/riscv-collab/riscv-gnu-toolchain.git ~/opt/riscv-tools/src
+    cd ~/opt/riscv-tools/src && git submodule init
+    cd ~/opt/riscv-tools/src && git -c submodule.qemu.update=none submodule update --recursive --progress
+    echo "${password}" | sudo -S apt install -y autoconf automake autotools-dev curl python3 libmpc-dev libmpfr-dev libgmp-dev gawk build-essential bison flex texinfo gperf libtool patchutils bc zlib1g-dev libexpat-dev ninja-build
+    export PREFIX="${HOME}/opt/riscv-tools"
+    cd ~/opt/riscv-tools/src && ./configure --prefix="${PREFIX}" --enable-gdb --enable-gcc-checkin
+    make -j$(($(nproc) - 2))
+    echo "${password}" | sudo -S apt install -y gdb-multiarch
+    shell=$(choose_shell "选择初始化RISCV-Tools的Shell")
+    if [[ $shell == "bash" ]]; then
+        rc=~/.bashrc
+    else
+        rc=~/.zshrc
+    fi
+    # shellcheck disable=SC2016
+    printf 'export PATH=%s:"${PATH}"' "${PREFIX}"/bin >>"${rc}"
+}
+
 # Show menu and get user input
 show_menu
 
-# TODO: 添加main函数, 实现依赖安装, 同时添加别的函数
+# TODO: 修改剩下的三个函数
 
 function main() {
     # Read Password
