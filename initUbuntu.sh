@@ -255,7 +255,7 @@ function usage() {
     done | pr -o 8 -3 -t -w "$(($(tput cols) - 75))"
     echo ""
     # shellcheck disable=SC2016
-    echo 'By default, you can use `initUbuntu -i [tools]` to install single tools you'\''d like to use'
+    echo 'By default, you can use `initUbuntu -i` to install single tool interactvely you'\''d like to use'
     # shellcheck disable=SC2016
     echo 'or you can use `initUbuntu -t` to run text-based UI (dependency dialog is needed)'
 }
