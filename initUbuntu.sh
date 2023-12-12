@@ -61,7 +61,7 @@ while IFS= read -r line; do
             mlen=$len
         fi
     fi
-done <"$dir/new.sh"
+done <"$dir/initUbuntu.sh"
 
 # ============================= Helper Functions =============================
 
