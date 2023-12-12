@@ -906,6 +906,49 @@ function init_tmux() {
         proxy_off
     fi
 
+    # Add Configuration
+    get_shell_rc
+    if [[ ${rc} =~ "bash" ]] && ! grep -q "Tmux" "$rc"; then
+        # shellcheck disable=SC1001
+        # shellcheck disable=SC2028
+        echo "
+# Tmux
+function ttmux(){
+    if (pgrep tmux); then
+        echo \"\$(tput bold)\$(tput setaf 2)Tmux is running, attaching to last session...\$(tput sgr0)\"
+        tmux attach
+    else
+        echo \"\$(tput bold)\$(tput setaf 2)Starting new tmux session...\$(tput sgr0)\"
+        tmux
+    fi
+    if [[ -n \$SSH_CONNECTION ]]; then
+        read -t 3 -p \"You are in a \$(tput bold)\$(tput setaf 2)SSH\$(tput sgr0) session, disconnect after detach tmux? (default no, in 3 seconds) [y/n]: \" && echo \"\"
+        if [[ \${input^^} == \"Y\" ]]; then
+            builtin exit
+        fi
+    fi
+}" >>"${rc}"
+    elif [[ ${rc} =~ "zsh" ]] && ! grep -q "Tmux" "$rc"; then
+        # shellcheck disable=SC1001
+        # shellcheck disable=SC2028
+        echo "
+# Tmux
+function ttmux(){
+    if pgrep tmux >/dev/null; then
+        echo \"\$(tput bold)\$(tput setaf 2)Tmux is running, attaching to last session...\$(tput sgr0)\"
+        tmux attach
+    else
+        echo \"\$(tput bold)\$(tput setaf 2)Starting new tmux session...\$(tput sgr0)\"
+        tmux
+    fi
+    if [[ -n \$SSH_CONNECTION ]]; then
+        read -t 3 -q \"input?You are in a \$(tput bold)\$(tput setaf 2)SSH\$(tput sgr0) session, disconnect after detach tmux? (default no, in 3 seconds) [y/n]: \" && echo \"\"
+        if [[ \${(C)input} == \"Y\" ]]; then
+            builtin exit
+        fi
+    fi
+}" >>"${rc}"
+    fi
     return 0
 }
 
