@@ -1,5 +1,6 @@
 ![InitUbuntu](assets/image.png)
 
+
 # InitUbuntu: A Simple Way to Initialize Your Ubuntu
 
 **又是一个困在Ubuntu配置的深夜? 别担心, 本仓库将会帮助你 :)**
@@ -22,33 +23,36 @@
 
 3. 运行脚本：
 
+   运行下述命令以查看如何使用该脚本
+
    ```bash
-   bash init.sh
+   bash initUbuntu -h
    ```
+   ![Usage](assets/usage.png)
 
 4. 根据提示选择你想要配置的选项。
 
-   - 选择 `换源USTC` 可以将系统的软件源更换为中科大源。
-   - 选择 `配置Clash` 可以配置 `Clash` 代理工具。
-   - 选择 `配置Qv2ray` 可以配置 `Qv2ray` 代理工具。
-   - 选择 `配置ZSH` 可以配置 `ZSH` 终端。
-   - 选择 `配置TMUX` 可以配置 `TMUX` 终端复用工具。
-   - 选择 `配置FRP` 可以配置 `FRP` 内网穿透工具。
-   - 选择 `配置NodeJS` 可以配置 `NodeJS` 运行环境。
-   - 选择 `配置Rust` 可以配置 `Rust` 编程语言环境。
-   - 选择 `配置VIM` 可以配置 `VIM` 编辑器。
-   - 选择 `配置LunarVIM` 可以配置 `LunarVIM` 编辑器。
-   - 选择 `配置QEMU` 可以配置 `QEMU` 虚拟机。
-   - 选择 `配置RISCV-Tools` 可以配置 `RISCV-Tools` 工具链。
-   - 选择 `配置Miniconda` 可以配置 `Miniconda` 环境。
-   - 选择 `配置Bottom` 可以配置 `Bottom` 系统监控工具。
-   - 选择 `配置Glances` 可以配置 `Glances` 系统监控工具。
-   - 选择 `配置Zoxide` 可以配置 `Zoxide` 目录导航工具。
-   - 选择 `配置Bat` 可以配置 `Bat` 文件查看工具。
-   - 选择 `配置Go` 可以配置 `Go` 编程语言环境。
-   - 选择 `配置eza` 可以配置 `eza` 文件导航工具。
-   - 选择 `配置fd` 可以配置 `fd` 文件搜索工具。
-   - 选择 `配置ripgrep` 可以配置 `ripgrep` 文本搜索工具。
+   - 选择 `USTC` 可以将系统的软件源更换为中科大源。
+   - 选择 `Clash` 可以配置 `Clash` 代理工具。
+   - 选择 `Qv2ray` 可以配置 `Qv2ray` 代理工具。
+   - 选择 `ZSH` 可以配置 `ZSH` 终端。
+   - 选择 `TMUX` 可以配置 `TMUX` 终端复用工具。
+   - 选择 `FRP` 可以配置 `FRP` 内网穿透工具。
+   - 选择 `NodeJS` 可以配置 `NodeJS` 运行环境。
+   - 选择 `Rust` 可以配置 `Rust` 编程语言环境。
+   - 选择 `VIM` 可以配置 `VIM` 编辑器。
+   - 选择 `LunarVIM` 可以配置 `LunarVIM` 编辑器。
+   - 选择 `QEMU` 可以配置 `QEMU` 虚拟机。
+   - 选择 `RISCV-Tools` 可以配置 `RISCV-Tools` 工具链。
+   - 选择 `Miniconda` 可以配置 `Miniconda` 环境。
+   - 选择 `Bottom` 可以配置 `Bottom` 系统监控工具。
+   - 选择 `Glances` 可以配置 `Glances` 系统监控工具。
+   - 选择 `Zoxide` 可以配置 `Zoxide` 目录导航工具。
+   - 选择 `Bat` 可以配置 `Bat` 文件查看工具。
+   - 选择 `Go` 可以配置 `Go` 编程语言环境。
+   - 选择 `eza` 可以配置 `eza` 文件导航工具。
+   - 选择 `fd` 可以配置 `fd` 文件搜索工具。
+   - 选择 `ripgrep` 可以配置 `ripgrep` 文本搜索工具。
 
 5. 根据提示完成配置。
 
