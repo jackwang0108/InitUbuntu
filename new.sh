@@ -989,7 +989,7 @@ function init_nodejs() {
             return 1
         fi
     fi
-    mkdir -p ${_home}
+    mkdir -p "${_home}"
 
     # Get NodeJS Version
     NODE_MAJOR=""
