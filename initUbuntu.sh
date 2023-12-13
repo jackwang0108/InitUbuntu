@@ -733,12 +733,14 @@ function init_zsh() {
         "zsh-syntax-highlighting"
         "zsh-history-substring-search"
         "zsh-vi-mode"
+        "zsh-completions"
     )
     _plugin_urls=(
         "https://github.com/zsh-users/zsh-autosuggestions"
         "https://github.com/zsh-users/zsh-syntax-highlighting.git"
         "https://github.com/zsh-users/zsh-history-substring-search"
         "https://github.com/jeffreytse/zsh-vi-mode.git"
+        "https://github.com/zsh-users/zsh-completions"
     )
     for i in "${!_plugins[@]}"; do
         if ! git_clone "${_plugin_urls[$i]}" "${ZSH_CUSTOM:-$HOME/.oh-my-zsh/custom}/plugins/${_plugins[$i]}"; then
@@ -761,6 +763,9 @@ export HISTORY_SUBSTRING_SEARCH_HIGHLIGHT_FOUND=(bg=red,fg=magenta,bold)
 
 # zsh-vi-mode
 ZVM_VI_INSERT_ESCAPE_BINDKEY=jj
+
+# zsh-completions
+fpath+=\${ZSH_CUSTOM:-\${ZSH:-\${HOME}/.oh-my-zsh}/custom}/plugins/zsh-completions/src
 " >>~/.zshrc
 
     # Download Font
