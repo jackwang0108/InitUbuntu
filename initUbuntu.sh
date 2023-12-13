@@ -747,7 +747,10 @@ function init_zsh() {
             ilog "Download ${_plugins[$i]} failed! This may because your proxy didn't work. Change to another proxy node and try again!" "${BOLD}" "${RED}"
             continue
         fi
-        sed -i "s/plugins=(/plugins=(${_plugins[$i]} /" ~/.zshrc
+        # for zsh-completios, see https://github.com/zsh-users/zsh-completions/issues/603
+        if [[ ! "${_plugins[$i]}" == "zsh-completions" ]]; then
+            sed -i "s/plugins=(/plugins=(${_plugins[$i]} /" ~/.zshrc
+        fi
         ilog "Zsh Plugin: ${_plugins[$i]} added" "${NORMAL}" "${GREEN}"
     done
     # Plugin configure
