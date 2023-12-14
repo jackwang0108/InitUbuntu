@@ -3,8 +3,6 @@
 -- Forum: https://www.reddit.com/r/lunarvim/
 -- Discord: https://discord.com/invite/Xb9B4Ny
 
-
-
 -- 参考:
 --      1. https://www.lunarvim.org/zh-Hans/docs/configuration/options
 --      2. https://www.bilibili.com/read/cv22495061/
@@ -22,19 +20,16 @@
 
 -- 使用:help lua-guide-options查看所有设置
 
-
-
+-- ========================= 通用设置 =========================
+lvim.log.level = "warn"
 
 -- ========================= 外观设置 =========================
 -- 配色方案
-lvim.colorscheme = 'lunar'
+lvim.colorscheme = "lunar"
 -- 透明窗口
 lvim.transparent_window = false
 -- 底部状态栏
 lvim.builtin.lualine.style = "default" -- or "none"
-
-
-
 
 -- ========================= 编辑设置 =========================
 -- 1个缩进等价于四个空格
@@ -49,8 +44,8 @@ vim.opt.wrap = true
 vim.opt.smarttab = true
 -- 由于Tab在不同编辑器显示的宽度不同, 将Tab自动转换为空格
 vim.opt.expandtab = true
-
-
+-- 保存后自动格式化
+lvim.format_on_save = true
 
 -- ========================= NeoVIM 键位设置 =========================
 -- Leader 键, 默认的Leader键是 Space。 可以通过如下配置更改：
@@ -90,12 +85,24 @@ lvim.keys.normal_mode["<C-d>"] = "<C-d>zz"
 -- Control+S 映射为保存文件
 lvim.keys.normal_mode["<C-s>"] = ":w<CR>"
 -- Control+Q 映射为保存文件并退出
-lvim.keys.normal_mode["<C-q>"] = ":wq<CR>"
+lvim.keys.normal_mode["<C-q>"] = ":BufferKill<CR>"
+-- lvim.keys.normal_mode["<C-q>"] = ":wq<CR>"
 -- Control+/ 映射为注释当前行
 lvim.keys.normal_mode["<C-/>"] = "ma<Esc>I-- <Esc>`a"
 -- Control+E 打开NVimTree的浏览栏
 lvim.keys.normal_mode["<C-e>"] = ":NvimTreeToggle<CR>"
-
+-- Leader+T+F 打开ToggleTerm命令行
+lvim.keys.normal_mode["<leader>tf"] = ":ToggleTerm<CR>"
+-- Leader+T+F 打开ToggleTerm命令行, tab形式打开
+lvim.keys.normal_mode["<leader>tt"] = ":ToggleTerm direction=tab<CR>"
+-- Leader+T+F 打开ToggleTerm命令行, 水平打开
+lvim.keys.normal_mode["<leader>th"] = ":ToggleTerm direction=horizontal<CR>"
+-- Leader+T+F 打开ToggleTerm命令行, 垂直打开
+lvim.keys.normal_mode["<leader>tv"] = ":ToggleTerm direction=vertical<CR>"
+lvim.keys.normal_mode["<C-l>"] = ":BufferLineCycleNext<CR>"
+lvim.keys.normal_mode["<C-h>"] = ":BufferLineCyclePrev<CR>"
+-- Leader + r + n 设置相对行号
+lvim.keys.normal_mode["<leader>rn"] = ":set relativenumber<CR>"
 
 -- ******** 插入模式下键位映射 ********
 -- jj 映射为Esc键
@@ -107,57 +114,47 @@ lvim.keys.insert_mode["<C-q>"] = "<Esc>:wq<CR>"
 -- Control+E 打开NVimTree的浏览栏
 lvim.keys.normal_mode["<C-e>"] = "<Esc>:NvimTreeToggle<CR>a"
 
-
 -- ******** 可视模式下键位映射 ********
 -- jj 映射为Esc键
 -- lvim.keys.visual_mode["jj"] = "<Esc>"
-
-
 
 -- ========================= LSP 设置 =========================
 -- LunarVIM使用Mason来管理LSP
 -- 自动安装LSP
 -- lvim.lsp.automatic_servers_installation = true
-lvim.lsp.installer.setup.automatic_installation = true
-
-
-
-
+-- lvim.lsp.installer.setup.automatic_installation = true
 
 -- ========================= Formatter和Linter 设置 =========================
-local formatters = require("lvim.lsp.null-ls.formatters")
-formatters.setup({
-	{ command = "stylua" },
-	{
-		command = "black",
-		filetypes = { "python" },
-	},
-	{
-		command = "prettier",
-		extra_args = { "--print-width", "100" },
-		filetypes = { "typescript", "typescriptreact" },
-	},
-})
+-- local formatters = require("lvim.lsp.null-ls.formatters")
+-- formatters.setup({
+-- 	{ command = "stylua" },
+-- 	{
+-- 		command = "black",
+-- 		filetypes = { "python" },
+-- 	},
+-- 	{
+-- 		command = "prettier",
+-- 		extra_args = { "--print-width", "100" },
+-- 		filetypes = { "typescript", "typescriptreact" },
+-- 	},
+-- })
 
-local linters = require("lvim.lsp.null-ls.linters")
-linters.setup({
-	{ command = "flake8", filetypes = { "python" } },
-	{
-		command = "shellcheck",
-		args = { "--severity", "warning" },
-	},
-	{
-		command = "luacheck",
-		filetypes = { "lua" },
-	},
-	-- {
-	-- 	command = "cpplint",
-	-- 	filetypes = { "cpp", "c" },
-	-- },
-})
-
-
-
+-- local linters = require("lvim.lsp.null-ls.linters")
+-- linters.setup({
+-- 	{ command = "flake8", filetypes = { "python" } },
+-- 	{
+-- 		command = "shellcheck",
+-- 		args = { "--severity", "warning" },
+-- 	},
+-- 	{
+-- 		command = "luacheck",
+-- 		filetypes = { "lua" },
+-- 	},
+-- 	-- {
+-- 	-- 	command = "cpplint",
+-- 	-- 	filetypes = { "cpp", "c" },
+-- 	-- },
+-- })
 
 -- ========================= 插件设置 =========================
 -- LunarVIM 中插件通过 folke/lazy.nvim 管理， 并被分成 核心插件 和 用户插件 两类。
@@ -172,8 +169,13 @@ linters.setup({
 
 -- ******** 核心插件设置 ********
 -- => ToggleTerm插件设置
+lvim.builtin.terminal.active = true
 -- 打开内建命令行绑定到 Control+T
 lvim.builtin.terminal.open_mapping = "<C-t>"
+
+-- => alpha插件设置
+lvim.builtin.alpha.active = true
+lvim.builtin.alpha.mode = "dashboard"
 
 -- => Telescope插件设置
 -- lvim.builtin.telescope.on_config_done = function(telescope)
@@ -186,6 +188,22 @@ lvim.builtin.terminal.open_mapping = "<C-t>"
 
 -- => TreeSitter插件设置: 开启彩色圆括号
 lvim.builtin.treesitter.rainbow.enable = true
+lvim.builtin.treesitter.highlight.enabled = true
+lvim.builtin.treesitter.ignore_install = { "haskell" }
+lvim.builtin.treesitter.ensure_installed = {
+    "bash",
+    "c",
+    "javascript",
+    "json",
+    "lua",
+    "python",
+    "typescript",
+    "tsx",
+    "css",
+    "rust",
+    "java",
+    "yaml",
+}
 
 -- => NVimTree设置
 -- lvim.builtin.nvimtree.setup.auto_open = 1
@@ -200,14 +218,12 @@ lvim.builtin.nvimtree.setup.renderer.icons.glyphs.folder.arrow_closed = ""
 -- lvim.builtin.nvimtree.setup.renderer.icons.glyphs.folder.symlink = ""
 -- lvim.builtin.nvimtree.setup.view.cursor = false
 
-
 -- => WhichKey设置
 -- lvim.builtin.which_key.mappings["e"] = {
 --     name = "+文件浏览",
 --     o = { "<cmd>nvimtree NvimTreeToggle<CR>", "打开文件浏览" },
 --     c = { "<cmd>nvimtree TreeCollapse<CR>", "关闭文件浏览" },
 -- }
-
 
 -- => Mason插件设置
 -- 设置日志等级
@@ -222,11 +238,9 @@ lvim.builtin.mason.registries = {
 -- 设置交互界面LSP标志
 lvim.builtin.mason.ui.icons = {
     package_installed = "✓",
-        package_pending = "➜",
-    package_uninstalled = "✗"
+    package_pending = "➜",
+    package_uninstalled = "✗",
 }
-
-
 
 -- ******** 用户插件设置 ********
 -- 常用用户插件配置:  https://www.lunarvim.org/zh-Hans/docs/configuration/plugins/example-configurations
@@ -238,19 +252,28 @@ lvim.plugins = {
         -- see https://github.com/tpope/vim-surround/issues/117
         init = function()
             vim.o.timeoutlen = 500
-        end
+        end,
+    },
+    {
+        -- folke/trouble.nvim是一个为Neovim设计的插件，旨在提供一个更好的问题和错误浏览体验。该插件可以帮助开发者更轻松地浏览和导航代码中的问题和错误
+        "folke/trouble.nvim",
+        cmd = "TroubleToggle",
+    },
+    {
+        -- "lukas-reineke/indent-blankline.nvim"是一个Neovim插件，用于在编辑器中显示缩进线，以提高代码的可读性和可视化效果。它可以帮助开发者更清晰地看到代码中的缩进层次结构。
+        "lukas-reineke/indent-blankline.nvim",
     },
     {
         -- 自动保存 插件
         "Pocco81/auto-save.nvim",
         config = function()
             require("auto-save").setup()
-        end
+        end,
     },
     {
         -- vim-cursorword 是一个 Vim 插件，用于在当前光标所在单词的出现位置进行高亮显示。它可以帮助您更好地定位和识别当前编辑的单词，提高代码编辑的准确性和可视化效果。
         "itchyny/vim-cursorword",
-        event = {"BufEnter", "BufNewFile"},
+        event = { "BufEnter", "BufNewFile" },
         config = function()
             vim.api.nvim_command("augroup user_plugin_cursorword")
             vim.api.nvim_command("autocmd!")
@@ -259,17 +282,17 @@ lvim.plugins = {
             vim.api.nvim_command("autocmd InsertEnter * let b:cursorword = 0")
             vim.api.nvim_command("autocmd InsertLeave * let b:cursorword = 1")
             vim.api.nvim_command("augroup END")
-        end
+        end,
     },
     {
         -- 增强VIM "." 的插件
-        "tpope/vim-repeat"
+        "tpope/vim-repeat",
     },
     {
         -- nvim-ts-rainbow2 是一个 NeoVim 插件，用于在代码编辑器中为括号和其他符号添加彩虹色的高亮显示。它可以帮助您更好地理解和识别代码中的嵌套结构，提高代码的可读性和可视化效果。
         "HiPhish/nvim-ts-rainbow2",
         lazy = true,
-        event = {"User FileOpened"}
+        event = { "User FileOpened" },
     },
     {
         -- goto-preview 是一个 NeoVim 插件，旨在提供代码导航和预览功能。它可以帮助您快速浏览和跳转到代码中的定义、引用和其他相关位置，从而提高代码阅读和编辑的效率。
@@ -376,7 +399,7 @@ lvim.plugins = {
         cmd = { "WindowsMaximize", "WindowsMaximizeVertically", "WindowsMaximizeHorizontally", "WindowsEqualize" },
         dependencies = {
             "anuvyklack/middleclass",
-            "anuvyklack/animation.nvim"
+            "anuvyklack/animation.nvim",
         },
         config = function()
             vim.o.winwidth = 10
@@ -654,21 +677,21 @@ lvim.plugins = {
         "norcalli/nvim-colorizer.lua",
         event = "BufRead",
         config = function()
-          require("colorizer").setup({ "css", "scss", "html", "javascript" }, {
-              RGB = true, -- #RGB hex codes
-              RRGGBB = true, -- #RRGGBB hex codes
-              RRGGBBAA = true, -- #RRGGBBAA hex codes
-              rgb_fn = true, -- CSS rgb() and rgba() functions
-              hsl_fn = true, -- CSS hsl() and hsla() functions
-              css = true, -- Enable all CSS features: rgb_fn, hsl_fn, names, RGB, RRGGBB
-              css_fn = true, -- Enable all CSS *functions*: rgb_fn, hsl_fn
-              })
+            require("colorizer").setup({ "css", "scss", "html", "javascript" }, {
+                RGB = true,      -- #RGB hex codes
+                RRGGBB = true,   -- #RRGGBB hex codes
+                RRGGBBAA = true, -- #RRGGBBAA hex codes
+                rgb_fn = true,   -- CSS rgb() and rgba() functions
+                hsl_fn = true,   -- CSS hsl() and hsla() functions
+                css = true,      -- Enable all CSS features: rgb_fn, hsl_fn, names, RGB, RRGGBB
+                css_fn = true,   -- Enable all CSS *functions*: rgb_fn, hsl_fn
+            })
         end,
     },
     {
         -- telescope-file-browser.nvim 是一个用于文件浏览和导航的 Neovim 插件。它是基于 telescope.nvim 插件构建的，提供了一个更直观和交互性更强的文件浏览器界面。
         "nvim-telescope/telescope-file-browser.nvim",
-        dependencies = { "nvim-telescope/telescope.nvim", "nvim-lua/plenary.nvim" }
+        dependencies = { "nvim-telescope/telescope.nvim", "nvim-lua/plenary.nvim" },
     },
     {
         -- telescope-fzy-native.nvim 是 Telescope 插件的一个扩展，它提供了更快速和更高效的模糊搜索算法。它使用了 fzy 算法，这是一个优化过的模糊搜索算法，可以在大型数据集上提供更快的搜索速度。
@@ -680,7 +703,7 @@ lvim.plugins = {
         "f-person/git-blame.nvim",
         event = "BufRead",
         config = function()
-            vim.cmd "highlight default link gitblame SpecialComment"
+            vim.cmd("highlight default link gitblame SpecialComment")
             vim.g.gitblame_enabled = 0
         end,
     },
@@ -700,9 +723,9 @@ lvim.plugins = {
             "GRemove",
             "GRename",
             "Glgrep",
-            "Gedit"
+            "Gedit",
         },
-        ft = {"fugitive"}
+        ft = { "fugitive" },
     },
     {
         -- nvim-ts-autotag 是一个适用于 Neovim 的插件，用于自动添加和更新 HTML、XML 和 JSX 标签的闭合标记。
@@ -752,8 +775,7 @@ lvim.plugins = {
         -- 本插件基于nvim-treesitter，根据当前光标在文中的位置，配合Comment.nvim，自动选择合适的注释格式
         "JoosepAlviste/nvim-ts-context-commentstring",
         lazy = true,
-        event = {"User FileOpened"}
-
+        event = { "User FileOpened" },
     },
     {
         -- nvim-treesitter-context是一款基于nvim-treesitter的上文文固定插件。
@@ -763,121 +785,120 @@ lvim.plugins = {
         event = { "User FileOpened" },
         config = function()
             require("treesitter-context").setup({
-                enable = true,
+                enable = true,        -- Enable this plugin (Can be enabled/disabled later via commands)
                 throttle = true,
-                max_lines = 0,
-                patterns = {
-                    default = {
-                        "class",
-                        "function",
-                        "method",
-                    },
-                },
+                max_lines = 0,        -- Maximum number of lines to show for a single context
+                line_numbers = true,
+                trim_scope = "outer", -- Which context lines to discard if `max_lines` is exceeded. Choices: 'inner', 'outer'
+                mode = "cursor",      -- Line used to calculate context. Choices: 'cursor', 'topline'
+                multiline_threshold = 20,
+                on_attach = nil,      -- (fun(buf: integer): boolean) return false to disable attaching
             })
         end,
     },
-    {
-        -- nvim-treesitter-textobjects 是一个 NeoVim 插件，它通过利用 Treesitter 引擎的语法解析功能，提供了更精确和灵活的文本对象选择器，以便在编辑代码时进行更精确的操作
-        "nvim-treesitter/nvim-treesitter-textobjects",
-        lazy = true,
-        event = { "User FileOpened" },
-        after = "nvim-treesitter",
-        dependencies = { "nvim-treesitter/nvim-treesitter" },
-        config = function()
-            require("nvim-treesitter.configs").setup({
-                textobjects = {
-                    select = {
-                        enable = true,
-                        lookahead = true,
-                        keymaps = {
-                            ["af"] = "@function.outer",
-                            ["if"] = "@function.inner",
-                            ["ac"] = "@class.outer",
-                            ["ic"] = { query = "@class.inner", desc = "Select inner part of a class region" },
-                            ["as"] = { query = "@scope", query_group = "locals", desc = "Select language scope" },
-                            ["id"] = "@conditional.inner",
-                            ["ad"] = "@conditional.outer",
-                        },
-                        selection_modes = {
-                            ["@parameter.outer"] = "v", -- charwise
-                            ["@function.outer"] = "V", -- linewise
-                            ["@class.outer"] = "<c-v>", -- blockwise
-                        },
-                        include_surrounding_whitespace = false,
-                    },
-                    move = {
-                        enable = true,
-                        set_jumps = true,
-                        goto_next_start = {
-                            ["]m"] = "@function.outer",
-                            ["]]"] = { query = "@class.outer", desc = "Next class start" },
-                            --
-                            -- You can use regex matching and/or pass a list in a "query" key to group multiple queires.
-                            ["]o"] = "@loop.*",
-                            -- ["]o"] = { query = { "@loop.inner", "@loop.outer" } }
-                            --
-                            -- You can pass a query group to use query from `queries/<lang>/<query_group>.scm file in your runtime path.
-                            -- Below example nvim-treesitter's `locals.scm` and `folds.scm`. They also provide highlights.scm and indent.scm.
-                            ["]s"] = { query = "@scope", query_group = "locals", desc = "Next scope" },
-                            ["]z"] = { query = "@fold", query_group = "folds", desc = "Next fold" },
-                        },
-                        goto_next_end = {
-                            ["]M"] = "@function.outer",
-                            ["]["] = "@class.outer",
-                        },
-                        goto_previous_start = {
-                            ["[m"] = "@function.outer",
-                            ["[["] = "@class.outer",
-                        },
-                        goto_previous_end = {
-                            ["[M"] = "@function.outer",
-                            ["[]"] = "@class.outer",
-                        },
-                        -- Below will go to either the start or the end, whichever is closer.
-                        -- Use if you want more granular movements
-                        -- Make it even more gradual by adding multiple queries and regex.
-                        goto_next = {
-                            ["]d"] = "@conditional.outer",
-                        },
-                        goto_previous = {
-                            ["[d"] = "@conditional.outer",
-                        },
-                    },
-                    swap = {
-                        enable = false,
-                        swap_next = {
-                            ["<leader>a"] = "@parameter.inner",
-                        },
-                        swap_previous = {
-                            ["<leader>A"] = "@parameter.inner",
-                        },
-                    },
-                },
-            })
-            local ts_repeat_move = require("nvim-treesitter.textobjects.repeatable_move")
+    -- {
+    --     -- nvim-treesitter-textobjects 是一个 NeoVim 插件，它通过利用 Treesitter 引擎的语法解析功能，提供了更精确和灵活的文本对象选择器，以便在编辑代码时进行更精确的操作
+    --     "nvim-treesitter/nvim-treesitter-textobjects",
+    --     lazy = true,
+    --     commit = "73e44f43c70289c70195b5e7bc6a077ceffddda4",
+    --     event = { "User FileOpened" },
+    --     after = "nvim-treesitter",
+    --     dependencies = { "nvim-treesitter/nvim-treesitter" },
+    --     config = function()
+    --         require("nvim-treesitter.configs").setup({
+    --             textobjects = {
+    --                 select = {
+    --                     enable = true,
+    --                     lookahead = true,
+    --                     keymaps = {
+    --                         ["af"] = "@function.outer",
+    --                         ["if"] = "@function.inner",
+    --                         ["ac"] = "@class.outer",
+    --                         ["ic"] = { query = "@class.inner", desc = "Select inner part of a class region" },
+    --                         ["as"] = { query = "@scope", query_group = "locals", desc = "Select language scope" },
+    --                         ["id"] = "@conditional.inner",
+    --                         ["ad"] = "@conditional.outer",
+    --                     },
+    --                     selection_modes = {
+    --                         ["@parameter.outer"] = "v", -- charwise
+    --                         ["@function.outer"] = "V",  -- linewise
+    --                         ["@class.outer"] = "<c-v>", -- blockwise
+    --                     },
+    --                     include_surrounding_whitespace = false,
+    --                 },
+    --                 move = {
+    --                     enable = true,
+    --                     set_jumps = true,
+    --                     goto_next_start = {
+    --                         ["]m"] = "@function.outer",
+    --                         ["]]"] = { query = "@class.outer", desc = "Next class start" },
+    --                         --
+    --                         -- You can use regex matching and/or pass a list in a "query" key to group multiple queires.
+    --                         ["]o"] = "@loop.*",
+    --                         -- ["]o"] = { query = { "@loop.inner", "@loop.outer" } }
+    --                         --
+    --                         -- You can pass a query group to use query from `queries/<lang>/<query_group>.scm file in your runtime path.
+    --                         -- Below example nvim-treesitter's `locals.scm` and `folds.scm`. They also provide highlights.scm and indent.scm.
+    --                         ["]s"] = { query = "@scope", query_group = "locals", desc = "Next scope" },
+    --                         ["]z"] = { query = "@fold", query_group = "folds", desc = "Next fold" },
+    --                     },
+    --                     goto_next_end = {
+    --                         ["]M"] = "@function.outer",
+    --                         ["]["] = "@class.outer",
+    --                     },
+    --                     goto_previous_start = {
+    --                         ["[m"] = "@function.outer",
+    --                         ["[["] = "@class.outer",
+    --                     },
+    --                     goto_previous_end = {
+    --                         ["[M"] = "@function.outer",
+    --                         ["[]"] = "@class.outer",
+    --                     },
+    --                     -- Below will go to either the start or the end, whichever is closer.
+    --                     -- Use if you want more granular movements
+    --                     -- Make it even more gradual by adding multiple queries and regex.
+    --                     goto_next = {
+    --                         ["]d"] = "@conditional.outer",
+    --                     },
+    --                     goto_previous = {
+    --                         ["[d"] = "@conditional.outer",
+    --                     },
+    --                 },
+    --                 swap = {
+    --                     enable = false,
+    --                     swap_next = {
+    --                         ["<leader>a"] = "@parameter.inner",
+    --                     },
+    --                     swap_previous = {
+    --                         ["<leader>A"] = "@parameter.inner",
+    --                     },
+    --                 },
+    --             },
+    --         })
+    --         local ts_repeat_move = require("nvim-treesitter.textobjects.repeatable_move")
 
-            -- Repeat movement with ; and ,
-            -- ensure ; goes forward and , goes backward regardless of the last direction
-            vim.keymap.set({ "n", "x", "o" }, ";", ts_repeat_move.repeat_last_move_next)
-            vim.keymap.set({ "n", "x", "o" }, ",", ts_repeat_move.repeat_last_move_previous)
+    --         -- Repeat movement with ; and ,
+    --         -- ensure ; goes forward and , goes backward regardless of the last direction
+    --         vim.keymap.set({ "n", "x", "o" }, ";", ts_repeat_move.repeat_last_move_next)
+    --         vim.keymap.set({ "n", "x", "o" }, ",", ts_repeat_move.repeat_last_move_previous)
 
-            -- vim way: ; goes to the direction you were moving.
-            -- vim.keymap.set({ "n", "x", "o" }, ";", ts_repeat_move.repeat_last_move)
-            -- vim.keymap.set({ "n", "x", "o" }, ",", ts_repeat_move.repeat_last_move_opposite)
+    --         -- vim way: ; goes to the direction you were moving.
+    --         -- vim.keymap.set({ "n", "x", "o" }, ";", ts_repeat_move.repeat_last_move)
+    --         -- vim.keymap.set({ "n", "x", "o" }, ",", ts_repeat_move.repeat_last_move_opposite)
 
-            -- Optionally, make builtin f, F, t, T also repeatable with ; and ,
-            -- vim.keymap.set({ "n", "x", "o" }, "f", ts_repeat_move.builtin_f)
-            -- vim.keymap.set({ "n", "x", "o" }, "F", ts_repeat_move.builtin_F)
-            -- vim.keymap.set({ "n", "x", "o" }, "t", ts_repeat_move.builtin_t)
-            -- vim.keymap.set({ "n", "x", "o" }, "T", ts_repeat_move.builtin_T)
-        end,
-    },
+    --         -- Optionally, make builtin f, F, t, T also repeatable with ; and ,
+    --         -- vim.keymap.set({ "n", "x", "o" }, "f", ts_repeat_move.builtin_f)
+    --         -- vim.keymap.set({ "n", "x", "o" }, "F", ts_repeat_move.builtin_F)
+    --         -- vim.keymap.set({ "n", "x", "o" }, "t", ts_repeat_move.builtin_t)
+    --         -- vim.keymap.set({ "n", "x", "o" }, "T", ts_repeat_move.builtin_T)
+    --     end,
+    -- },
     {
         -- folke/todo-comments.nvim 是一个 Neovim 编辑器的插件，用于在代码中管理和突出显示待办事项、注释和标记。
-        'folke/todo-comments.nvim',
-        event = 'BufRead',
+        "folke/todo-comments.nvim",
+        event = "BufRead",
         config = function()
-            require('todo-comments').setup()
+            require("todo-comments").setup()
         end,
     },
     {
@@ -885,118 +906,120 @@ lvim.plugins = {
         "folke/trouble.nvim",
         dependencies = { "nvim-tree/nvim-web-devicons" },
         opts = {
-         -- your configuration comes here
-         -- or leave it empty to use the default settings
-         -- refer to the configuration section below
+            -- your configuration comes here
+            -- or leave it empty to use the default settings
+            -- refer to the configuration section below
         },
     },
     {
         -- kevinhwang91/nvim-hlslens 是一个用于 Neovim 编辑器的插件，旨在增强代码编辑体验。它提供了一种突出显示和导航代码中的符号的方式，使得阅读和编辑代码更加方便。
-        'kevinhwang91/nvim-hlslens',
-        event = 'VimEnter',
+        "kevinhwang91/nvim-hlslens",
+        event = "VimEnter",
         config = function()
-            require('hlslens').setup({
+            require("hlslens").setup({
                 override_lens = function(render, posList, nearest, idx, relIdx)
                     local sfw = vim.v.searchforward == 1
                     local indicator, text, chunks
                     local absRelIdx = math.abs(relIdx)
                     if absRelIdx > 1 then
-                        indicator = ('%d%s'):format(absRelIdx, sfw ~= (relIdx > 1) and '▲' or '▼')
+                        indicator = ("%d%s"):format(absRelIdx, sfw ~= (relIdx > 1) and "▲" or "▼")
                     elseif absRelIdx == 1 then
-                        indicator = sfw ~= (relIdx == 1) and '▲' or '▼'
+                        indicator = sfw ~= (relIdx == 1) and "▲" or "▼"
                     else
-                        indicator = ''
+                        indicator = ""
                     end
                     local lnum, col = unpack(posList[idx])
                     if nearest then
                         local cnt = #posList
-                      if indicator ~= '' then
-                        text = ('[%s %d/%d]'):format(indicator, idx, cnt)
-                      else
-                        text = ('[%d/%d]'):format(idx, cnt)
-                      end
-                      chunks = { { ' ', 'Ignore' }, { text, 'HlSearchLensNear' } }
+                        if indicator ~= "" then
+                            text = ("[%s %d/%d]"):format(indicator, idx, cnt)
+                        else
+                            text = ("[%d/%d]"):format(idx, cnt)
+                        end
+                        chunks = { { " ", "Ignore" }, { text, "HlSearchLensNear" } }
                     else
-                        text = ('[%s %d]'):format(indicator, idx)
-                        chunks = { { ' ', 'Ignore' }, { text, 'HlSearchLens' } }
+                        text = ("[%s %d]"):format(indicator, idx)
+                        chunks = { { " ", "Ignore" }, { text, "HlSearchLens" } }
                     end
                     render.setVirt(0, lnum - 1, col - 1, chunks, nearest)
-            end
+                end,
             })
-            vim.keymap.set('', 'n', function()
-                require('hlslens').start()
+            vim.keymap.set("", "n", function()
+                require("hlslens").start()
                 if vim.v.searchforward == 1 then
-                    return 'n'
+                    return "n"
                 else
-                    return 'N'
+                    return "N"
                 end
             end, { expr = true })
-            vim.keymap.set('', 'N', function()
-                require('hlslens').start()
+            vim.keymap.set("", "N", function()
+                require("hlslens").start()
                 if vim.v.searchforward == 1 then
-                    return 'N'
+                    return "N"
                 else
-                    return 'n'
+                    return "n"
                 end
             end, { expr = true })
-        end
+        end,
     },
     {
         -- petertriho/nvim-scrollbar 是一个用于 Neovim 编辑器的插件，用于定制和增强编辑器的滚动条功能。它可以帮助您在编辑器中显示滚动条，并提供各种配置选项来满足您的需求。
-        'petertriho/nvim-scrollbar',
-        event = 'BufRead',
+        "petertriho/nvim-scrollbar",
+        event = "BufRead",
         config = function()
-          require('scrollbar').setup({
-            handlers = {
-              cursor = true,
-              diagnostic = true,
-              gitsigns = true,
-              handle = true,
-              search = true,
-            },
-          })
+            require("scrollbar").setup({
+                handlers = {
+                    cursor = true,
+                    diagnostic = true,
+                    gitsigns = true,
+                    handle = true,
+                    search = true,
+                },
+            })
         end,
     },
     {
         -- MattesGroeger/vim-bookmarks 是一个用于 Vim 编辑器的插件，旨在帮助您在代码中创建和管理书签，以便更轻松地导航和编辑代码。
-        'MattesGroeger/vim-bookmarks',
-        event = 'BufRead',
+        "MattesGroeger/vim-bookmarks",
+        event = "BufRead",
         init = function()
-            vim.g.bookmark_sign = ''
-            vim.g.bookmark_annotation_sign = ''
+            vim.g.bookmark_sign = ""
+            vim.g.bookmark_annotation_sign = ""
             vim.g.bookmark_display_annotation = 1
             vim.g.bookmark_no_default_key_mappings = 1
-            vim.g.bookmark_auto_save_file = join_paths(get_cache_dir(), 'vim-bookmarks')
+            vim.g.bookmark_auto_save_file = join_paths(get_cache_dir(), "vim-bookmarks")
         end,
         config = function()
             -- vim.cmd('highlight BookmarkAnnotationSignDefault guifg=' .. colors_palette.yellow)
             -- vim.cmd('highlight BookmarkSignDefault guifg=' .. colors_palette.yellow)
-            require('which-key').register({
-                m = { '<Plug>BookmarkToggle', 'Toggle bookmark', },
-                i = { '<Plug>BookmarkAnnotate', 'Annotate bookmark', },
-                n = { "m'<Plug>BookmarkNext", 'Next bookmark', },
-                p = { "m'<Plug>BookmarkPrev", 'Previous bookmark', },
-                c = { '<Plug>BookmarkClear', 'Clear bookmarks in current file', },
-                C = { '<Plug>BookmarkClearAll', 'Clear all bookmarks', },
-                j = { '<Plug>BookmarkMoveDown', 'Move bookmark down', },
-                k = { '<Plug>BookmarkMoveUp', 'Move bookmark up', },
-                g = { '<Plug>BookmarkMoveToLine', 'Move bookmark to specified line', },
-            }, { prefix = 'm', noremap = false })
+            require("which-key").register({
+                m = { "<Plug>BookmarkToggle", "Toggle bookmark" },
+                i = { "<Plug>BookmarkAnnotate", "Annotate bookmark" },
+                n = { "m'<Plug>BookmarkNext", "Next bookmark" },
+                p = { "m'<Plug>BookmarkPrev", "Previous bookmark" },
+                c = { "<Plug>BookmarkClear", "Clear bookmarks in current file" },
+                C = { "<Plug>BookmarkClearAll", "Clear all bookmarks" },
+                j = { "<Plug>BookmarkMoveDown", "Move bookmark down" },
+                k = { "<Plug>BookmarkMoveUp", "Move bookmark up" },
+                g = { "<Plug>BookmarkMoveToLine", "Move bookmark to specified line" },
+            }, { prefix = "m", noremap = false })
         end,
     },
     {
-        'romgrk/barbar.nvim',
+        "romgrk/barbar.nvim",
         dependencies = {
-            'lewis6991/gitsigns.nvim', -- OPTIONAL: for git status
-            'nvim-tree/nvim-web-devicons', -- OPTIONAL: for file icons
+            "lewis6991/gitsigns.nvim",     -- OPTIONAL: for git status
+            "nvim-tree/nvim-web-devicons", -- OPTIONAL: for file icons
         },
-        init = function() vim.g.barbar_auto_setup = false end,
+        init = function()
+            vim.g.barbar_auto_setup = false
+        end,
         opts = {
-          -- lazy.nvim will automatically call setup for you. put your options here, anything missing will use the default:
-          -- animation = true,
-          -- insert_at_start = true,
-          -- …etc.
+            -- lazy.nvim will automatically call setup for you. put your options here, anything missing will use the default:
+            -- animation = true,
+            -- insert_at_start = true,
+            -- …etc.
         },
-        version = '^1.0.0', -- optional: only update when a new 1.x version is released
+        version = "^1.0.0", -- optional: only update when a new 1.x version is released
     },
 }
