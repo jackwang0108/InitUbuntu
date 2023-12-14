@@ -1026,6 +1026,7 @@ function init_nodejs() {
     # Install User NodeJS
     # Download
     proxy_on
+    ilog "=> Downloading NodeJS" "$NORMAL" "$GREEN"
     if ! wget -c -q --show-progress --tries=5 -P "$_home" -e http_proxy=127.0.0.1:${PORT} -e https_proxy=127.0.0.1:${PORT} "https://nodejs.org/dist/v${NODE_VERSION}/node-v${NODE_VERSION}-linux-x64.tar.xz"; then
         ilog "Mannually download NodeJS failed, this may because of your proxy. Check your proxy and try later!" "${BOLD}" "${RED}"
         proxy_off
@@ -1095,6 +1096,7 @@ function init_go() {
 
     # Install Go
     mkdir -p "${_home}"
+    ilog "=> Downloading Go" "$NORMAL" "$GREEN"
     if ! wget -c -q --show-progress --tries=5 -P "${_home}" -e http_proxy=127.0.0.1:${PORT} -e https_proxy=127.0.0.1:${PORT} https://go.dev/dl/go1.21.4.linux-amd64.tar.gz; then
         ilog "Mannually download Go failed, this may because of your proxy. Check your proxy and try later!" "${BOLD}" "${RED}"
         proxy_off
@@ -1130,6 +1132,7 @@ function init_miniconda() {
 
     # Download Miniconda
     mkdir -p "${_home}"
+    ilog "=> Downloading Miniconda" "$NORMAL" "$GREEN"
     if ! wget -c -q --show-progress --tries=5 -P "${_home}" -e http_proxy=127.0.0.1:${PORT} -e https_proxy=127.0.0.1:${PORT} https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh; then
         ilog "Mannually download Miniconda failed, this may because of your proxy. Check your proxy and try later!" "${BOLD}" "${RED}"
         proxy_off
@@ -1437,6 +1440,7 @@ function init_todo() {
     mkdir -p "${_home}"
 
     # Download todo
+    ilog "=> Downloading todo" "$NORMAL" "$GREEN"
     if ! wget -c -q --show-progress --tries=5 -P "${_home}" -e http_proxy=127.0.0.1:${PORT} -e https_proxy=127.0.0.1:${PORT} https://github.com/todotxt/todo.txt-cli/releases/download/v2.12.0/todo.txt_cli-2.12.0.tar.gz; then
         ilog "Mannually download todo failed, this may because of your proxy. Check your proxy and try later!" "${BOLD}" "${RED}"
         proxy_off
@@ -1475,6 +1479,7 @@ function init_lazygit() {
     mkdir -p "${_home}/lazygit-${LAZYGIT_VERSION}"
 
     # Download lazygit
+    ilog "=> Downloading Lazygit" "$NORMAL" "$GREEN"
     if ! wget -c -q --show-progress --tries=5 -P "${_home}" -e http_proxy=127.0.0.1:${PORT} -e https_proxy=127.0.0.1:${PORT} "https://github.com/jesseduffield/lazygit/releases/latest/download/lazygit_${LAZYGIT_VERSION}_Linux_x86_64.tar.gz"; then
         ilog "Mannually download lazygit failed, this may because of your proxy. Check your proxy and try later!" "${BOLD}" "${RED}"
         proxy_off
@@ -1494,6 +1499,111 @@ export PATH=\${PATH}:${_home}/bin
     fi
 
     proxy_off
+    return 0
+}
+
+function init_vim() {
+    ilog "=> Initializing vim" "$BOLD" "$GREEN"
+
+    # User Vim
+    ilog "=> Setup user vim" "$NORMAL" "$GREEN"
+    # Backup first
+    if [[ -f ${HOME}/.vimrc ]]; then
+        mv "${HOME}"/.vimrc "${HOME}"/.vimrc-"$(date +%Y.%m.%d.%S)"
+    fi
+    # Setup
+    cp "${dir}"/.vimrc "${HOME}"
+    mkdir -p "${HOME}"/.vim/.backup
+    mkdir -p "${HOME}"/.vim/.swp
+    mkdir -p "${HOME}"/.vim/.undo
+    get_shell_rc
+    if ! grep -q "Vim" "${rc}"; then
+        echo "
+# Vim
+export EDITOR=vim
+" >>"${rc}"
+    fi
+
+    # Root Vim
+    ilog "=> Setup root vim" "$NORMAL" "$GREEN"
+    # Backup first
+    if [[ -f /root/.vimrc ]]; then
+        mv /root/.vimrc /root/.vimrc-"$(date +%Y.%m.%d.%S)"
+    fi
+    # Setup
+    cp "${dir}"/.vimrc /root
+    mkdir -p /root/.vim/.backup
+    mkdir -p /root/.vim/.swp
+    mkdir -p /root/.vim/.undo
+
+    return 0
+}
+
+function init_Neovim() {
+    ilog "=> Initializing Neovim" "$BOLD" "$GREEN"
+    _home="${HOME}"/opt/neovim
+    if [[ -d $_home ]]; then
+        cleaned="False"
+        cleanup "Neovim" "$_home" "" ""
+        if [[ $cleaned == "False" ]]; then
+            return 1
+        fi
+    fi
+    mkdir -p "${_home}"
+
+    # Download Neovim
+    ilog "=> Downloading Neovim" "$BOLD" "$GREEN"
+    if ! wget -c -q --show-progress --tries=5 -P "${_home}" -e http_proxy=127.0.0.1:${PORT} -e https_proxy=127.0.0.1:${PORT} https://github.com/neovim/neovim/releases/download/v0.9.4/nvim-linux64.tar.gz; then
+        ilog "Mannually download Neovim failed, this may because of your proxy. Check your proxy and try later!" "${BOLD}" "${RED}"
+        proxy_off
+        return 1
+    fi
+
+    # Configure Neovim
+    tar xzvf "${_home}"/nvim-linux64.tar.gz -C "${_home}"
+    mv "${_home}"/nvim-linux64 "${_home}"/nvim-linux64-9.4.0
+    ln -s "${_home}"/nvim-linux64-9.4.0/bin "${_home}"/bin
+    ln -s "${_home}"/nvim-linux64-9.4.0/lib "${_home}"/lib
+    ln -s "${_home}"/nvim-linux64-9.4.0/man "${_home}"/man
+    ln -s "${_home}"/nvim-linux64-9.4.0/share "${_home}"/share
+
+    get_shell_rc
+    if ! grep -q "Neovim" "${rc}"; then
+        echo "
+# Neovim
+export PATH=${_home}/bin:\${PATH}
+" >>"${rc}"
+    fi
+    return 0
+}
+
+function init_LunarVIM() {
+    ilog "=> Initializing LunarVIM" "$BOLD" "$GREEN"
+    # Cleanup
+    if [[ -d ${HOME}/.config/lvim ]]; then
+        bash "${HOME}"/.local/share/lunarvim/lvim/utils/installer/uninstall.sh
+    fi
+
+    # Install
+    proxy_on
+    if ! LV_BRANCH='release-1.3/neovim-0.9' bash <(curl -s https://raw.githubusercontent.com/LunarVim/LunarVim/release-1.3/neovim-0.9/utils/installer/install.sh); then
+        ilog "Mannually download LunarVIM failed, this may because of your proxy. Check your proxy and try later!" "${BOLD}" "${RED}"
+        proxy_off
+        return 1
+    fi
+
+    # Config
+    get_shell_rc
+    if ! grep -q "LunarVIM" "${rc}"; then
+        echo "
+# LunarVIM
+export PATH=${HOME}/.local/bin:\$PATH
+export EDITOR=\"lvim\"
+alias vim=\"lvim\"
+" >>"${rc}"
+    fi
+    cp "${dir}"/config.lua ~/.config/lvim
+
     return 0
 }
 
@@ -1570,8 +1680,6 @@ function _init_riscvtools() {
 
 # Show menu and get user input
 show_menu
-
-# TODO: 修改剩下的三个函数, 增加init_lunarvim
 
 function main() {
     # Read Password
