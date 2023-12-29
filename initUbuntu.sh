@@ -1365,23 +1365,6 @@ alias tree=\"eza --tree --icons=always --total-size\"                    # æ›¿æ
 " >>"${rc}"
     fi
 
-    # TODO: fix bug
-    # eza community
-    if ! git_clone hhttps://github.com/eth-p/bat-extras.gitttps://github.com/eth-p/bat-extras.git "${_home}"; then
-        ilog "Download bat-extras failed! This may because your proxy didn't work. Change to another proxy node and try again!" "${BOLD}" "${RED}"
-        proxy_off
-        return 1
-    fi
-
-    # eza community configuration
-    get_shell_rc
-    if ! grep -q "eza-community" "${rc}"; then
-        echo "
-# eza-community
-export FPATH=\"${_home}/completions/zsh:\$FPATH\"
-" >>"${rc}"
-    fi
-
     proxy_off
     return 0
 }
