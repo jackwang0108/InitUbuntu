@@ -1646,6 +1646,9 @@ function _init_gptnextweb() {
     fi
 }
 
+# TODO: 完成剩下的功能
+# TODO: 将代码中的代理更换为输入的代理地址
+
 function _init_qemu() {
     echo "=> 正在配置QEMU"
     echo "${password}" | sudo -S apt install -y autoconf automake autotools-dev curl libmpc-dev libmpfr-dev libgmp-dev gawk build-essential bison flex texinfo gperf libtool patchutils bc zlib1g-dev libexpat-dev git libglib2.0-dev libfdt-dev libpixman-1-dev libncurses5-dev libncursesw5-dev
