@@ -3,6 +3,7 @@
 # Configuration Variables. You may modify them to your own setting
 # Proxy Port
 PORT=7890
+IP=127.0.0.1
 
 # ================================ Scripts ================================
 # Define Global Variable
@@ -96,12 +97,12 @@ function ilog() {
 # Example:
 #   proxy_on
 function proxy_on() {
-    export HTTP_PROXY=http://127.0.0.1:${PORT}
-    export HTTPS_PROXY=http://127.0.0.1:${PORT}
-    export ALL_PROXY=socks5://127.0.0.1:${PORT}
-    git config --global https.proxy http://127.0.0.1:${PORT}
-    git config --global https.proxy https://127.0.0.1:${PORT}
-    alias wget='wget -e http_proxy=127.0.0.1:${PORT} -e https_proxy=127.0.0.1:${PORT}'
+    export HTTP_PROXY=http://${IP}:${PORT}
+    export HTTPS_PROXY=http://${IP}:${PORT}
+    export ALL_PROXY=socks5://${IP}:${PORT}
+    git config --global https.proxy "http://${IP}:${PORT}"
+    git config --global https.proxy "https://${IP}:${PORT}"
+    alias wget='wget -e http_proxy=${IP}:${PORT} -e https_proxy=${IP}:${PORT}'
 }
 
 # proxy_off - Unset proxy environment variables
@@ -508,13 +509,16 @@ function add_proxy() {
     if ! grep -q "function proxy_on" "$rc"; then
         echo "
 function proxy_on() {
+    IP=${IP}
+    PORT=${PORT}
     echo \"Terminal Proxy is turned \$(tput setaf 2)\$(tput bold)ON\$(tput sgr0)\"
-    export HTTP_PROXY=http://127.0.0.1:${PORT}
-    export HTTPS_PROXY=http://127.0.0.1:${PORT}
-    export ALL_PROXY=socks://127.0.0.1:${PORT}
-    git config --global https.proxy http://127.0.0.1:${PORT}
-    git config --global https.proxy https://127.0.0.1:${PORT}
-    alias wget=\"wget -e http_proxy=127.0.0.1:${PORT} -e https_proxy=127.0.0.1:${PORT}\"
+    echo \"Terminal traffic is redirected to \$(tput setaf 2)\$(tput bold)\${IP}:\${PORT}\$(tput sgr0)\"
+    export HTTP_PROXY=http://\${IP}:\${PORT}
+    export HTTPS_PROXY=http://\${IP}:\${PORT}
+    export ALL_PROXY=socks://\${IP}:\${PORT}
+    git config --global https.proxy http://\${IP}:\${PORT}
+    git config --global https.proxy https://\${IP}:\${PORT}
+    alias wget=\"wget -e http_proxy=\${IP}:\${PORT} -e https_proxy=\${IP}:\${PORT}\"
 }" >>"$rc"
     fi
     # Add proxy_off
@@ -547,6 +551,11 @@ function proxy_test() {
     fi
 }" >>"${rc}"
     fi
+}
+
+function init_proxy() {
+    ilog "=> Initializing Proxy" "$BOLD" "$GREEN"
+    add_proxy
 }
 
 function init_clash() {
@@ -1106,7 +1115,7 @@ function init_go() {
 
     # Add Go Configuration
     get_shell_rc
-    if ! grep -q "NodeJS" "$rc"; then
+    if ! grep -q "Go" "$rc"; then
         echo "
 # Go
 export PATH=\${PATH}:/usr/local/go/bin
@@ -1138,7 +1147,6 @@ function init_miniconda() {
         proxy_off
         return 1
     fi
-    echo "${PASS}" | sudo -S tar -C /usr/local -xzf "${_home}"/go1.21.4.linux-amd64.tar.gz
 
     # Install Miniconda
     bash "${_home}"/Miniconda3-latest-Linux-x86_64.sh -b -u -p ~/miniconda3
@@ -1357,6 +1365,7 @@ alias tree=\"eza --tree --icons=always --total-size\"                    # æ›¿æ
 " >>"${rc}"
     fi
 
+    # TODO: fix bug
     # eza community
     if ! git_clone hhttps://github.com/eth-p/bat-extras.gitttps://github.com/eth-p/bat-extras.git "${_home}"; then
         ilog "Download bat-extras failed! This may because your proxy didn't work. Change to another proxy node and try again!" "${BOLD}" "${RED}"
@@ -1687,7 +1696,7 @@ function main() {
     # Check SUDO privilege
     if ! (echo "$PASS" | sudo -S -l -U "$USER" | grep -q '(ALL : ALL) ALL'); then
         ilog "initUbuntu needs SUDO privilege to run. Make sure you have it." "$BOLD" "$RED"
-        exit "$exitFail"
+        return "$exitFail"
     fi
     echo ""
     # main function
@@ -1699,6 +1708,32 @@ function main() {
     elif [[ $isDependency == "True" ]]; then
         install_dependency
     elif [[ $isInteractive == "True" ]] || [[ $isTUI == "True" ]]; then
+        # Read Proxy IP and Addr
+        while true; do
+            read -r -p "${BLUE}Please input your proxy server address (default: 127.0.0.1): ${GREEN}" _ip && echo -n "${RESET}"
+            if [[ $_ip =~ ^([0-9]{1,3}\.){3}[0-9]{1,3}$ ]]; then
+                IP=$_ip
+                break
+            elif [[ -z $_ip ]]; then
+                break
+            fi
+            ilog "Invalid IP address, please check if the address is valid." "${NORMAL}" "${YELLOW}"
+        done
+        while true; do
+            read -r -p "${BLUE}Please input your proxy server port (default: 7890): ${GREEN}" _port && echo -n "${RESET}"
+            if [[ -z $_port ]]; then
+                break
+            else
+                if ! [[ $_port =~ ^[0-9]+$ ]]; then
+                    ilog "Invalid format, port is not an integer." "${NORMAL}" "${YELLOW}"
+                elif [ "$_port" -lt 1 ] || [ "$_port" -gt 65535 ]; then
+                    ilog "Invalid port, port is out of the valid range (1-65535)." "${NORMAL}" "${YELLOW}"
+                else
+                    PORT=$_port
+                    break
+                fi
+            fi
+        done
         for index in "${functions_to_run[@]}"; do
             if ${init_functions[$index]}; then
                 success_tools+=("${init_functions[$index]#init_}")
