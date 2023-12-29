@@ -1248,7 +1248,7 @@ function init_zoxide() {
 
     # Download Zoxide
     proxy_on
-    if curl -sS https://raw.githubusercontent.com/ajeetdsouza/zoxide/main/install.sh | bash; then
+    if !( curl -sS https://raw.githubusercontent.com/ajeetdsouza/zoxide/main/install.sh | bash ); then
         ilog "Download Zoxide failed! This may because your proxy didn't work. Change to another proxy node and try again!" "${BOLD}" "${RED}"
         return 1
     fi
@@ -1258,7 +1258,7 @@ function init_zoxide() {
     if ! grep -q "Zoxide" "${rc}"; then
         echo "
 # Zoxide
-eval '\$(zoxide init \"${shell}\" --cmd cd)'
+eval \"\$(zoxide init ${shell} --cmd cd)\"
 " >>"${rc}"
     fi
 
