@@ -206,7 +206,7 @@ lvim.builtin.treesitter.ensure_installed = {
 }
 
 -- => NVimTree设置
--- lvim.builtin.nvimtree.setup.auto_open = 1
+lvim.builtin.nvimtree.setup.auto_open = true
 lvim.builtin.nvimtree.setup.view.side = "left"
 lvim.builtin.nvimtree.setup.view.centralize_selection = true
 lvim.builtin.nvimtree.setup.renderer.icons.show.git = true
@@ -263,13 +263,13 @@ lvim.plugins = {
         -- "lukas-reineke/indent-blankline.nvim"是一个Neovim插件，用于在编辑器中显示缩进线，以提高代码的可读性和可视化效果。它可以帮助开发者更清晰地看到代码中的缩进层次结构。
         "lukas-reineke/indent-blankline.nvim",
     },
-    {
-        -- 自动保存 插件
-        "Pocco81/auto-save.nvim",
-        config = function()
-            require("auto-save").setup()
-        end,
-    },
+    -- {
+    --     -- 自动保存 插件
+    --     "Pocco81/auto-save.nvim",
+    --     config = function()
+    --         require("auto-save").setup()
+    --     end,
+    -- },
     {
         -- vim-cursorword 是一个 Vim 插件，用于在当前光标所在单词的出现位置进行高亮显示。它可以帮助您更好地定位和识别当前编辑的单词，提高代码编辑的准确性和可视化效果。
         "itchyny/vim-cursorword",
@@ -371,27 +371,27 @@ lvim.plugins = {
             })
         end,
     },
-    {
-        -- 将没有使用到的变量进行暗淡处理
-        "zbirenbaum/neodim",
-        lazy = true,
-        event = "LspAttach",
-        config = function()
-            require("neodim").setup({
-                alpha = 0.5,
-                blend_color = "#000000",
-                update_in_insert = {
-                    enable = true,
-                    delay = 100,
-                },
-                hide = {
-                    virtual_text = true,
-                    signs = false,
-                    underline = false,
-                },
-            })
-        end,
-    },
+    -- {
+    --     -- 将没有使用到的变量进行暗淡处理
+    --     "zbirenbaum/neodim",
+    --     lazy = true,
+    --     event = "LspAttach",
+    --     config = function()
+    --         require("neodim").setup({
+    --             alpha = 0.5,
+    --             blend_color = "#000000",
+    --             update_in_insert = {
+    --                 enable = true,
+    --                 delay = 100,
+    --             },
+    --             hide = {
+    --                 virtual_text = true,
+    --                 signs = false,
+    --                 underline = false,
+    --             },
+    --         })
+    --     end,
+    -- },
     {
         -- windows.nvim 是一个 NeoVim 插件，旨在提供更强大的窗口管理功能。它扩展了 NeoVim 的默认窗口管理功能，使您能够更方便地操作和组织编辑器中的窗口。
         "anuvyklack/windows.nvim",
@@ -742,10 +742,10 @@ lvim.plugins = {
         event = "BufRead",
         dependencies = "mattn/webapi-vim",
     },
-    {
-        -- -nvim-ts-rainbow 通过treesitter解析代码后得到的匹配圆括号进行彩色显示
-        "p00f/nvim-ts-rainbow",
-    },
+    -- {
+    --     -- -nvim-ts-rainbow 通过treesitter解析代码后得到的匹配圆括号进行彩色显示
+    --     "p00f/nvim-ts-rainbow",
+    -- },
     {
         -- playground 插件直接展示treesitter的上下文信息
         "nvim-treesitter/playground",
@@ -796,103 +796,103 @@ lvim.plugins = {
             })
         end,
     },
-    -- {
-    --     -- nvim-treesitter-textobjects 是一个 NeoVim 插件，它通过利用 Treesitter 引擎的语法解析功能，提供了更精确和灵活的文本对象选择器，以便在编辑代码时进行更精确的操作
-    --     "nvim-treesitter/nvim-treesitter-textobjects",
-    --     lazy = true,
-    --     commit = "73e44f43c70289c70195b5e7bc6a077ceffddda4",
-    --     event = { "User FileOpened" },
-    --     after = "nvim-treesitter",
-    --     dependencies = { "nvim-treesitter/nvim-treesitter" },
-    --     config = function()
-    --         require("nvim-treesitter.configs").setup({
-    --             textobjects = {
-    --                 select = {
-    --                     enable = true,
-    --                     lookahead = true,
-    --                     keymaps = {
-    --                         ["af"] = "@function.outer",
-    --                         ["if"] = "@function.inner",
-    --                         ["ac"] = "@class.outer",
-    --                         ["ic"] = { query = "@class.inner", desc = "Select inner part of a class region" },
-    --                         ["as"] = { query = "@scope", query_group = "locals", desc = "Select language scope" },
-    --                         ["id"] = "@conditional.inner",
-    --                         ["ad"] = "@conditional.outer",
-    --                     },
-    --                     selection_modes = {
-    --                         ["@parameter.outer"] = "v", -- charwise
-    --                         ["@function.outer"] = "V",  -- linewise
-    --                         ["@class.outer"] = "<c-v>", -- blockwise
-    --                     },
-    --                     include_surrounding_whitespace = false,
-    --                 },
-    --                 move = {
-    --                     enable = true,
-    --                     set_jumps = true,
-    --                     goto_next_start = {
-    --                         ["]m"] = "@function.outer",
-    --                         ["]]"] = { query = "@class.outer", desc = "Next class start" },
-    --                         --
-    --                         -- You can use regex matching and/or pass a list in a "query" key to group multiple queires.
-    --                         ["]o"] = "@loop.*",
-    --                         -- ["]o"] = { query = { "@loop.inner", "@loop.outer" } }
-    --                         --
-    --                         -- You can pass a query group to use query from `queries/<lang>/<query_group>.scm file in your runtime path.
-    --                         -- Below example nvim-treesitter's `locals.scm` and `folds.scm`. They also provide highlights.scm and indent.scm.
-    --                         ["]s"] = { query = "@scope", query_group = "locals", desc = "Next scope" },
-    --                         ["]z"] = { query = "@fold", query_group = "folds", desc = "Next fold" },
-    --                     },
-    --                     goto_next_end = {
-    --                         ["]M"] = "@function.outer",
-    --                         ["]["] = "@class.outer",
-    --                     },
-    --                     goto_previous_start = {
-    --                         ["[m"] = "@function.outer",
-    --                         ["[["] = "@class.outer",
-    --                     },
-    --                     goto_previous_end = {
-    --                         ["[M"] = "@function.outer",
-    --                         ["[]"] = "@class.outer",
-    --                     },
-    --                     -- Below will go to either the start or the end, whichever is closer.
-    --                     -- Use if you want more granular movements
-    --                     -- Make it even more gradual by adding multiple queries and regex.
-    --                     goto_next = {
-    --                         ["]d"] = "@conditional.outer",
-    --                     },
-    --                     goto_previous = {
-    --                         ["[d"] = "@conditional.outer",
-    --                     },
-    --                 },
-    --                 swap = {
-    --                     enable = false,
-    --                     swap_next = {
-    --                         ["<leader>a"] = "@parameter.inner",
-    --                     },
-    --                     swap_previous = {
-    --                         ["<leader>A"] = "@parameter.inner",
-    --                     },
-    --                 },
-    --             },
-    --         })
-    --         local ts_repeat_move = require("nvim-treesitter.textobjects.repeatable_move")
+    {
+        -- nvim-treesitter-textobjects 是一个 NeoVim 插件，它通过利用 Treesitter 引擎的语法解析功能，提供了更精确和灵活的文本对象选择器，以便在编辑代码时进行更精确的操作
+        "nvim-treesitter/nvim-treesitter-textobjects",
+        lazy = true,
+        commit = "73e44f43c70289c70195b5e7bc6a077ceffddda4",
+        event = { "User FileOpened" },
+        after = "nvim-treesitter",
+        dependencies = { "nvim-treesitter/nvim-treesitter" },
+        config = function()
+            require("nvim-treesitter.configs").setup({
+                textobjects = {
+                    select = {
+                        enable = true,
+                        lookahead = true,
+                        keymaps = {
+                            ["af"] = "@function.outer",
+                            ["if"] = "@function.inner",
+                            ["ac"] = "@class.outer",
+                            ["ic"] = { query = "@class.inner", desc = "Select inner part of a class region" },
+                            ["as"] = { query = "@scope", query_group = "locals", desc = "Select language scope" },
+                            ["id"] = "@conditional.inner",
+                            ["ad"] = "@conditional.outer",
+                        },
+                        selection_modes = {
+                            ["@parameter.outer"] = "v", -- charwise
+                            ["@function.outer"] = "V",  -- linewise
+                            ["@class.outer"] = "<c-v>", -- blockwise
+                        },
+                        include_surrounding_whitespace = false,
+                    },
+                    move = {
+                        enable = true,
+                        set_jumps = true,
+                        goto_next_start = {
+                            ["]m"] = "@function.outer",
+                            ["]]"] = { query = "@class.outer", desc = "Next class start" },
+                            --
+                            -- You can use regex matching and/or pass a list in a "query" key to group multiple queires.
+                            ["]o"] = "@loop.*",
+                            -- ["]o"] = { query = { "@loop.inner", "@loop.outer" } }
+                            --
+                            -- You can pass a query group to use query from `queries/<lang>/<query_group>.scm file in your runtime path.
+                            -- Below example nvim-treesitter's `locals.scm` and `folds.scm`. They also provide highlights.scm and indent.scm.
+                            ["]s"] = { query = "@scope", query_group = "locals", desc = "Next scope" },
+                            ["]z"] = { query = "@fold", query_group = "folds", desc = "Next fold" },
+                        },
+                        goto_next_end = {
+                            ["]M"] = "@function.outer",
+                            ["]["] = "@class.outer",
+                        },
+                        goto_previous_start = {
+                            ["[m"] = "@function.outer",
+                            ["[["] = "@class.outer",
+                        },
+                        goto_previous_end = {
+                            ["[M"] = "@function.outer",
+                            ["[]"] = "@class.outer",
+                        },
+                        -- Below will go to either the start or the end, whichever is closer.
+                        -- Use if you want more granular movements
+                        -- Make it even more gradual by adding multiple queries and regex.
+                        goto_next = {
+                            ["]d"] = "@conditional.outer",
+                        },
+                        goto_previous = {
+                            ["[d"] = "@conditional.outer",
+                        },
+                    },
+                    swap = {
+                        enable = false,
+                        swap_next = {
+                            ["<leader>a"] = "@parameter.inner",
+                        },
+                        swap_previous = {
+                            ["<leader>A"] = "@parameter.inner",
+                        },
+                    },
+                },
+            })
+            local ts_repeat_move = require("nvim-treesitter.textobjects.repeatable_move")
 
-    --         -- Repeat movement with ; and ,
-    --         -- ensure ; goes forward and , goes backward regardless of the last direction
-    --         vim.keymap.set({ "n", "x", "o" }, ";", ts_repeat_move.repeat_last_move_next)
-    --         vim.keymap.set({ "n", "x", "o" }, ",", ts_repeat_move.repeat_last_move_previous)
+            -- Repeat movement with ; and ,
+            -- ensure ; goes forward and , goes backward regardless of the last direction
+            vim.keymap.set({ "n", "x", "o" }, ";", ts_repeat_move.repeat_last_move_next)
+            vim.keymap.set({ "n", "x", "o" }, ",", ts_repeat_move.repeat_last_move_previous)
 
-    --         -- vim way: ; goes to the direction you were moving.
-    --         -- vim.keymap.set({ "n", "x", "o" }, ";", ts_repeat_move.repeat_last_move)
-    --         -- vim.keymap.set({ "n", "x", "o" }, ",", ts_repeat_move.repeat_last_move_opposite)
+            -- vim way: ; goes to the direction you were moving.
+            -- vim.keymap.set({ "n", "x", "o" }, ";", ts_repeat_move.repeat_last_move)
+            -- vim.keymap.set({ "n", "x", "o" }, ",", ts_repeat_move.repeat_last_move_opposite)
 
-    --         -- Optionally, make builtin f, F, t, T also repeatable with ; and ,
-    --         -- vim.keymap.set({ "n", "x", "o" }, "f", ts_repeat_move.builtin_f)
-    --         -- vim.keymap.set({ "n", "x", "o" }, "F", ts_repeat_move.builtin_F)
-    --         -- vim.keymap.set({ "n", "x", "o" }, "t", ts_repeat_move.builtin_t)
-    --         -- vim.keymap.set({ "n", "x", "o" }, "T", ts_repeat_move.builtin_T)
-    --     end,
-    -- },
+            -- Optionally, make builtin f, F, t, T also repeatable with ; and ,
+            -- vim.keymap.set({ "n", "x", "o" }, "f", ts_repeat_move.builtin_f)
+            -- vim.keymap.set({ "n", "x", "o" }, "F", ts_repeat_move.builtin_F)
+            -- vim.keymap.set({ "n", "x", "o" }, "t", ts_repeat_move.builtin_t)
+            -- vim.keymap.set({ "n", "x", "o" }, "T", ts_repeat_move.builtin_T)
+        end,
+    },
     {
         -- folke/todo-comments.nvim 是一个 Neovim 编辑器的插件，用于在代码中管理和突出显示待办事项、注释和标记。
         "folke/todo-comments.nvim",

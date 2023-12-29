@@ -1477,7 +1477,8 @@ function init_lazygit() {
         proxy_off
         return 1
     fi
-    tar xzvf "${_home}/lazygit-${LAZYGIT_VERSION}.tar.gz" -C "${_home}/lazygit-${LAZYGIT_VERSION}"
+
+    tar xzvf "${_home}/lazygit_${LAZYGIT_VERSION}_Linux_x86_64.tar.gz" -C "${_home}/lazygit-${LAZYGIT_VERSION}"
     ln -s "${_home}/lazygit-${LAZYGIT_VERSION}" "${_home}/bin"
 
     # lazygit configuration
@@ -1523,10 +1524,10 @@ export EDITOR=vim
         mv /root/.vimrc /root/.vimrc-"$(date +%Y.%m.%d.%S)"
     fi
     # Setup
-    cp "${dir}"/.vimrc /root
-    mkdir -p /root/.vim/.backup
-    mkdir -p /root/.vim/.swp
-    mkdir -p /root/.vim/.undo
+    echo "$PASS" | sudo -S cp "${dir}"/.vimrc /root
+    echo "$PASS" | sudo -S mkdir -p /root/.vim/.backup
+    echo "$PASS" | sudo -S mkdir -p /root/.vim/.swp
+    echo "$PASS" | sudo -S mkdir -p /root/.vim/.undo
 
     return 0
 }
