@@ -35,8 +35,8 @@ isGzip=$(whereis gzip | awk -F ' ' '{print $2}' | grep -v "man")
 isWget=$(whereis wget | awk -F ' ' '{print $2}' | grep -v "man")
 isCurl=$(whereis curl | awk -F ' ' '{print $2}' | grep -v "man")
 isDialog=$(whereis dialog | awk -F ' ' '{print $2}' | grep -v "man")
+isSSH=$(dpkg -l | awk -F ' ' '/openssh-server/{print $2}')
 
-# Color
 RED=$(tput setaf 1)
 GREEN=$(tput setaf 2)
 YELLOW=$(tput setaf 3)
@@ -437,18 +437,15 @@ done
 # check denpendencies
 if [[ $isDependency != "True" ]]; then
     _not_ok="False"
-    [[ -z $isGit ]] && _not_ok="True" ilog "Dependency git is not installed on your system. Use -d option to install dependencies" "${BOLD}" "${RED}"
-    [[ -z $isTar ]] && _not_ok="True" ilog "Dependency tar is not installed on your system. Use -d option to install dependencies" "${BOLD}" "${RED}"
-    [[ -z $isVim ]] && _not_ok="True" ilog "Dependency vim is not installed on your system. Use -d option to install dependencies" "${BOLD}" "${RED}"
-    [[ -z $isUnzip ]] && _not_ok="True" ilog "Dependency unzip is not installed on your system. Use -d option to install dependencies" "${BOLD}" "${RED}"
-    [[ -z $isGzip ]] && _not_ok="True" ilog "Dependency gzip is not installed on your system. Use -d option to install dependencies" "${BOLD}" "${RED}"
-    [[ -z $isWget ]] && _not_ok="True" ilog "Dependency wget is not installed on your system. Use -d option to install dependencies" "${BOLD}" "${RED}"
-    [[ -z $isCurl ]] && _not_ok="True" ilog "Dependency curl is not installed on your system. Use -d option to install dependencies" "${BOLD}" "${RED}"
-    [[ -z $isDialog ]] && _not_ok="True" ilog "Dependency dialog is not installed on your system. Use -d option to install dependencies" "${BOLD}" "${RED}"
-    if [[ $_not_ok == "True" ]]; then
-        ilog "Dependcies are not installed, exit." "${BOLD}" "${RED}"
-        exit "$exitFail"
-    fi
+    [[ -z $isGit ]] && _not_ok="True" ilog "Dependency git is not installed on your system. Use -d option to install dependencies" "${BOLD}" "${RED}" && exit "$exitFail"
+    [[ -z $isTar ]] && _not_ok="True" ilog "Dependency tar is not installed on your system. Use -d option to install dependencies" "${BOLD}" "${RED}" && exit "$exitFail"
+    [[ -z $isVim ]] && _not_ok="True" ilog "Dependency vim is not installed on your system. Use -d option to install dependencies" "${BOLD}" "${RED}" && exit "$exitFail"
+    [[ -z $isUnzip ]] && _not_ok="True" ilog "Dependency unzip is not installed on your system. Use -d option to install dependencies" "${BOLD}" "${RED}" && exit "$exitFail"
+    [[ -z $isGzip ]] && _not_ok="True" ilog "Dependency gzip is not installed on your system. Use -d option to install dependencies" "${BOLD}" "${RED}" && exit "$exitFail"
+    [[ -z $isWget ]] && _not_ok="True" ilog "Dependency wget is not installed on your system. Use -d option to install dependencies" "${BOLD}" "${RED}" && exit "$exitFail"
+    [[ -z $isCurl ]] && _not_ok="True" ilog "Dependency curl is not installed on your system. Use -d option to install dependencies" "${BOLD}" "${RED}" && exit "$exitFail"
+    [[ -z $isDialog ]] && _not_ok="True" ilog "Dependency dialog is not installed on your system. Use -d option to install dependencies" "${BOLD}" "${RED}" && exit "$exitFail"
+    [[ -z $isSSH ]] && _not_ok="True" ilog "Dependency openssh-server is not installed on your system. Use -d option to install dependencies" "${BOLD}" "${RED}" && exit "$exitFail"
 fi
 
 # ============================= init Functions =============================
