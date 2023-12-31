@@ -492,6 +492,7 @@ function install_dependency() {
     [[ -z $isWget ]] && tools="$tools wget"
     [[ -z $isCurl ]] && tools="$tools curl"
     [[ -z $isDialog ]] && tools="$tools dialog"
+    [[ -z $isSSH ]] && tools="$tools openssh-server"
     [[ -n $tools ]] && msg="Dependencies to be installed: ${tools}" || msg="All dependencies are installed. Nothing to do"
     ilog "$msg" "${NORMAL}" "${BLUE}"
     sleep 3s
