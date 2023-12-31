@@ -784,7 +784,7 @@ fpath+=\${ZSH_CUSTOM:-\${ZSH:-\${HOME}/.oh-my-zsh}/custom}/plugins/zsh-completio
     if ! git_clone https://github.com/ronniedroid/getnf.git "${HOME}"/opt/getnf; then
         ilog "Download getnf failed" "${BOLD}" "${RED}"
     fi
-    if ! wget -c -q --show-progress --tries=5 -P "${dir}" -e http_proxy=127.0.0.1:${PORT} -e https_proxy=127.0.0.1:${PORT} https://github.com/ryanoasis/nerd-fonts/releases/download/v3.1.1/FiraMono.zip; then
+    if ! wget -c -q --show-progress --tries=5 -P "${dir}" -e http_proxy="${IP}:${PORT}" -e https_proxy="${IP}:${PORT}" https://github.com/ryanoasis/nerd-fonts/releases/download/v3.1.1/FiraMono.zip; then
         ilog "Mannually download NerdFont failed, you can try getnf in ${HOME}/opt/getnf to download NerdFont later!" "${BOLD}" "${RED}"
         proxy_off
         return 1
@@ -834,7 +834,7 @@ function init_frp() {
     # Download File
     proxy_on
     ilog "Downloading $_name" "${NORMAL}" "${GREEN}"
-    if ! wget -c -q --show-progress --tries=5 -P "$_home" -e http_proxy=127.0.0.1:${PORT} -e https_proxy=127.0.0.1:${PORT} https://github.com/fatedier/frp/releases/download/v0.52.3/frp_0.52.3_linux_amd64.tar.gz; then
+    if ! wget -c -q --show-progress --tries=5 -P "$_home" -e http_proxy="${IP}:${PORT}" -e https_proxy="${IP}:${PORT}" https://github.com/fatedier/frp/releases/download/v0.52.3/frp_0.52.3_linux_amd64.tar.gz; then
         ilog "Mannually download $_name failed, this may because of your proxy. Check your proxy and try later!" "${BOLD}" "${RED}"
         proxy_off
         return 1
@@ -1034,7 +1034,7 @@ function init_nodejs() {
     # Download
     proxy_on
     ilog "=> Downloading NodeJS" "$NORMAL" "$GREEN"
-    if ! wget -c -q --show-progress --tries=5 -P "$_home" -e http_proxy=127.0.0.1:${PORT} -e https_proxy=127.0.0.1:${PORT} "https://nodejs.org/dist/v${NODE_VERSION}/node-v${NODE_VERSION}-linux-x64.tar.xz"; then
+    if ! wget -c -q --show-progress --tries=5 -P "$_home" -e http_proxy="${IP}:${PORT}" -e https_proxy="${IP}:${PORT}" "https://nodejs.org/dist/v${NODE_VERSION}/node-v${NODE_VERSION}-linux-x64.tar.xz"; then
         ilog "Mannually download NodeJS failed, this may because of your proxy. Check your proxy and try later!" "${BOLD}" "${RED}"
         proxy_off
         return 1
@@ -1104,7 +1104,7 @@ function init_go() {
     # Install Go
     mkdir -p "${_home}"
     ilog "=> Downloading Go" "$NORMAL" "$GREEN"
-    if ! wget -c -q --show-progress --tries=5 -P "${_home}" -e http_proxy=127.0.0.1:${PORT} -e https_proxy=127.0.0.1:${PORT} https://go.dev/dl/go1.21.4.linux-amd64.tar.gz; then
+    if ! wget -c -q --show-progress --tries=5 -P "${_home}" -e http_proxy="${IP}:${PORT}" -e https_proxy="${IP}:${PORT}" https://go.dev/dl/go1.21.4.linux-amd64.tar.gz; then
         ilog "Mannually download Go failed, this may because of your proxy. Check your proxy and try later!" "${BOLD}" "${RED}"
         proxy_off
         return 1
@@ -1140,7 +1140,7 @@ function init_miniconda() {
     # Download Miniconda
     mkdir -p "${_home}"
     ilog "=> Downloading Miniconda" "$NORMAL" "$GREEN"
-    if ! wget -c -q --show-progress --tries=5 -P "${_home}" -e http_proxy=127.0.0.1:${PORT} -e https_proxy=127.0.0.1:${PORT} https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh; then
+    if ! wget -c -q --show-progress --tries=5 -P "${_home}" -e http_proxy="${IP}:${PORT}" -e https_proxy="${IP}:${PORT}" https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh; then
         ilog "Mannually download Miniconda failed, this may because of your proxy. Check your proxy and try later!" "${BOLD}" "${RED}"
         proxy_off
         return 1
@@ -1246,7 +1246,7 @@ function init_zoxide() {
 
     # Download Zoxide
     proxy_on
-    if !( curl -sS https://raw.githubusercontent.com/ajeetdsouza/zoxide/main/install.sh | bash ); then
+    if ! (curl -sS https://raw.githubusercontent.com/ajeetdsouza/zoxide/main/install.sh | bash); then
         ilog "Download Zoxide failed! This may because your proxy didn't work. Change to another proxy node and try again!" "${BOLD}" "${RED}"
         return 1
     fi
@@ -1431,7 +1431,7 @@ function init_todo() {
 
     # Download todo
     ilog "=> Downloading todo" "$NORMAL" "$GREEN"
-    if ! wget -c -q --show-progress --tries=5 -P "${_home}" -e http_proxy=127.0.0.1:${PORT} -e https_proxy=127.0.0.1:${PORT} https://github.com/todotxt/todo.txt-cli/releases/download/v2.12.0/todo.txt_cli-2.12.0.tar.gz; then
+    if ! wget -c -q --show-progress --tries=5 -P "${_home}" -e http_proxy="${IP}:${PORT}" -e https_proxy="${IP}:${PORT}" https://github.com/todotxt/todo.txt-cli/releases/download/v2.12.0/todo.txt_cli-2.12.0.tar.gz; then
         ilog "Mannually download todo failed, this may because of your proxy. Check your proxy and try later!" "${BOLD}" "${RED}"
         proxy_off
         return 1
@@ -1470,7 +1470,7 @@ function init_lazygit() {
 
     # Download lazygit
     ilog "=> Downloading Lazygit" "$NORMAL" "$GREEN"
-    if ! wget -c -q --show-progress --tries=5 -P "${_home}" -e http_proxy=127.0.0.1:${PORT} -e https_proxy=127.0.0.1:${PORT} "https://github.com/jesseduffield/lazygit/releases/latest/download/lazygit_${LAZYGIT_VERSION}_Linux_x86_64.tar.gz"; then
+    if ! wget -c -q --show-progress --tries=5 -P "${_home}" -e http_proxy="${IP}:${PORT}" -e https_proxy="${IP}:${PORT}" "https://github.com/jesseduffield/lazygit/releases/latest/download/lazygit_${LAZYGIT_VERSION}_Linux_x86_64.tar.gz"; then
         ilog "Mannually download lazygit failed, this may because of your proxy. Check your proxy and try later!" "${BOLD}" "${RED}"
         proxy_off
         return 1
@@ -1544,7 +1544,7 @@ function init_Neovim() {
 
     # Download Neovim
     ilog "=> Downloading Neovim" "$BOLD" "$GREEN"
-    if ! wget -c -q --show-progress --tries=5 -P "${_home}" -e http_proxy=127.0.0.1:${PORT} -e https_proxy=127.0.0.1:${PORT} https://github.com/neovim/neovim/releases/download/v0.9.4/nvim-linux64.tar.gz; then
+    if ! wget -c -q --show-progress --tries=5 -P "${_home}" -e http_proxy="${IP}:${PORT}" -e https_proxy="${IP}:${PORT}" https://github.com/neovim/neovim/releases/download/v0.9.4/nvim-linux64.tar.gz; then
         ilog "Mannually download Neovim failed, this may because of your proxy. Check your proxy and try later!" "${BOLD}" "${RED}"
         proxy_off
         return 1
