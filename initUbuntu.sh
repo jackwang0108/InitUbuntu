@@ -1245,7 +1245,7 @@ function init_zoxide() {
 
     # Download Zoxide
     proxy_on
-    if curl -sS https://raw.githubusercontent.com/ajeetdsouza/zoxide/main/install.sh | bash; then
+    if !( curl -sS https://raw.githubusercontent.com/ajeetdsouza/zoxide/main/install.sh | bash ); then
         ilog "Download Zoxide failed! This may because your proxy didn't work. Change to another proxy node and try again!" "${BOLD}" "${RED}"
         return 1
     fi
@@ -1255,7 +1255,7 @@ function init_zoxide() {
     if ! grep -q "Zoxide" "${rc}"; then
         echo "
 # Zoxide
-eval '\$(zoxide init \"${shell}\" --cmd cd)'
+eval \"\$(zoxide init ${shell} --cmd cd)\"
 " >>"${rc}"
     fi
 
@@ -1359,23 +1359,6 @@ alias ll=\"eza --icons=always --total-size --long --header\"             # 显�
 alias la=\"eza --icons=always --total-size --long --header --all\"       # 显示全部文件目录，包括隐藏文件
 alias lg=\"eza --icons=always --total-size --long --header --all --git\" # 显示详情的同时，附带 git 状态信息
 alias tree=\"eza --tree --icons=always --total-size\"                    # 替换 tree 命令
-" >>"${rc}"
-    fi
-
-    # TODO: fix bug
-    # eza community
-    if ! git_clone hhttps://github.com/eth-p/bat-extras.gitttps://github.com/eth-p/bat-extras.git "${_home}"; then
-        ilog "Download bat-extras failed! This may because your proxy didn't work. Change to another proxy node and try again!" "${BOLD}" "${RED}"
-        proxy_off
-        return 1
-    fi
-
-    # eza community configuration
-    get_shell_rc
-    if ! grep -q "eza-community" "${rc}"; then
-        echo "
-# eza-community
-export FPATH=\"${_home}/completions/zsh:\$FPATH\"
 " >>"${rc}"
     fi
 
@@ -1491,7 +1474,8 @@ function init_lazygit() {
         proxy_off
         return 1
     fi
-    tar xzvf "${_home}/lazygit-${LAZYGIT_VERSION}.tar.gz" -C "${_home}/lazygit-${LAZYGIT_VERSION}"
+
+    tar xzvf "${_home}/lazygit_${LAZYGIT_VERSION}_Linux_x86_64.tar.gz" -C "${_home}/lazygit-${LAZYGIT_VERSION}"
     ln -s "${_home}/lazygit-${LAZYGIT_VERSION}" "${_home}/bin"
 
     # lazygit configuration
@@ -1537,10 +1521,10 @@ export EDITOR=vim
         mv /root/.vimrc /root/.vimrc-"$(date +%Y.%m.%d.%S)"
     fi
     # Setup
-    cp "${dir}"/.vimrc /root
-    mkdir -p /root/.vim/.backup
-    mkdir -p /root/.vim/.swp
-    mkdir -p /root/.vim/.undo
+    echo "$PASS" | sudo -S cp "${dir}"/.vimrc /root
+    echo "$PASS" | sudo -S mkdir -p /root/.vim/.backup
+    echo "$PASS" | sudo -S mkdir -p /root/.vim/.swp
+    echo "$PASS" | sudo -S mkdir -p /root/.vim/.undo
 
     return 0
 }
