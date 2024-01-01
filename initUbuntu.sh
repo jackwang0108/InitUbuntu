@@ -556,6 +556,19 @@ function init_proxy() {
     add_proxy
 }
 
+function init_ssh() {
+    ilog "=> Initializing SSH" "$BOLD" "$GREEN"
+    _home=${HOME}/.ssh/config
+    if [[ -f $_home ]]; then
+        mv "$_home" "${HOME}/.ssh/config.backup.$(date '+%Y-%m-%d %H:%m:%S')"
+    else
+        mkdir -p "${HOME}/.ssh"
+    fi
+    ssh-keygen
+    cp "${dir}/config" "$_home"
+    return 0
+}
+
 function init_clash() {
     ilog "=> Initializing Clash" "$BOLD" "$GREEN"
     _home="$HOME"/opt/clash
