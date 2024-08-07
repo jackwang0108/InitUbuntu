@@ -637,6 +637,7 @@ function init_clash() {
 
     # Add to systemd and test again
     sleep 5s
+    sed -i "s/#USER/$(whoami)/g" "${dir}"/clash.service
     if systemd_add "${dir}"/clash.service; then
         ilog "Add systemd service $_systemd success" "${NORMAL}" "${NORMAL}"
     else
@@ -877,8 +878,9 @@ function init_frp() {
             break
         fi
     done
-    sed -i "s/serverAddr = \"#ADDR\"/serverAddr = \"${_addr}\"/" "${_home}/${_name}".toml
-    sed -i "s/auth.token = \"#PASS\"/auth.token = \"${_pass}\"/" "${_home}/${_name}".toml
+    sed -i "s/#ADDR/${_addr}/g" "${_home}/${_name}".toml
+    sed -i "s/#PASS/${_pass}/g" "${_home}/${_name}".toml
+    sed -i "s/#USER/$(whoami)/g" "${dir}/${_name}".service
 
     if systemd_add "${dir}/${_name}.service"; then
         ilog "Add systemd service $_systemd success" "${NORMAL}" "${NORMAL}"
@@ -1004,6 +1006,11 @@ export CARGO_TARGET_DIR=\"\$HOME/.cargo\"
     proxy_off
     return 0
 }
+
+
+# todo, compile mode
+# toto, tldr, fzf-tab
+# zoxide 报错
 
 function init_nodejs() {
     ilog "=> Initializing NodeJS" "$BOLD" "$GREEN"
@@ -1201,6 +1208,7 @@ function init_glances() {
     sed -i "s,#GLANCES,$(which glances),g" glances.sh
     sed -i "s,#USER,${_username},g" glances.sh
     sed -i "s,#PASS,${_password},g" glances.sh
+    sed -i "s/#USER/$(whoami)/g" "${dir}/${_systemd}"
 
     if systemd_add "${dir}/${_systemd}"; then
         ilog "Add systemd service $_systemd success" "${NORMAL}" "${NORMAL}"

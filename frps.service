@@ -12,7 +12,7 @@ Wants=network.target
 # 指定了服务的类型，这里是simple，表示是一个简单的服务，即执行指定的命令或脚本。
 Type=simple
 # 指定了运行服务的用户，这里是jack，表示以jack的身份运行服务
-User=jack
+User=#USER
 # 无论是由于错误、异常退出还是手动停止，只要服务退出，它都应该立即重新启动。这确保了服务的持续性，即使出现问题导致服务停止，Systemd也会自动重新启动它，以恢复服务的正常运行。指定为always确保了下面的脚本会一直运行
 Restart=always
 # 指定了服务在重启之前的等待时间
@@ -20,9 +20,9 @@ RestartSec=5s
 # 指定了服务可以打开的最大文件描述符数，这里是1048576
 LimitNOFILE=1048576
 # 指定了要运行的命令或脚本的绝对路径
-ExecStart=/home/jack/opt/frps/bin/frps -c /home/jack/opt/frps/frps.toml
+ExecStart=/home/#USER/opt/frps/bin/frps -c /home/#USER/opt/frps/frps.toml
 # 服务重新加载（reload）时执行的命令或脚本。
-ExecReload=/home/jack/opt/frps/bin/frps -c /home/jack/opt/frps/frps.toml
+ExecReload=/home/#USER/opt/frps/bin/frps -c /home/#USER/opt/frps/frps.toml
 
 # 这个部分定义了服务的安装和启动配置
 [Install]
