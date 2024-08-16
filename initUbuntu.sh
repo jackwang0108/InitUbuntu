@@ -1009,7 +1009,7 @@ export CARGO_TARGET_DIR=\"\$HOME/.cargo\"
 
 
 # todo, compile mode
-# toto, tldr, fzf-tab
+# todo, tldr, fzf-tab
 # zoxide 报错
 
 function init_nodejs() {
@@ -1273,7 +1273,7 @@ function init_zoxide() {
     fi
 
     # Zoxide Configuration
-    get_shell_rc
+    shell=$(choose_shell "选择初始化Zoxide的Shell")
     if ! grep -q "Zoxide" "${rc}"; then
         echo "
 # Zoxide
@@ -1589,6 +1589,8 @@ export PATH=${_home}/bin:\${PATH}
     return 0
 }
 
+
+# TODO: 增加格式化代码， 以及lsp的支持
 function init_LunarVIM() {
     ilog "=> Initializing LunarVIM" "$BOLD" "$GREEN"
     # Cleanup
