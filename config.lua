@@ -121,7 +121,7 @@ lvim.keys.normal_mode["<C-e>"] = "<Esc>:NvimTreeToggle<CR>a"
 -- ========================= LSP 设置 =========================
 -- LunarVIM使用Mason来管理LSP
 -- 自动安装LSP
-lvim.lsp.installer.setup.automatic_installation = true
+lvim.lsp.installer.setup.automatic_servers_installation = true
 
 -- ========================= Formatter和Linter 设置 =========================
 local formatters = require("lvim.lsp.null-ls.formatters")
