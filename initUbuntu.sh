@@ -737,6 +737,7 @@ function init_zsh() {
         proxy_on
         return 1
     fi
+
     sed -i 's/ZSH_THEME=.*/ZSH_THEME="powerlevel10k\/powerlevel10k"/' ~/.zshrc
     echo "
 # To customize prompt, run \$(p10k configure) or edit ~/.p10k.zsh.
@@ -1008,9 +1009,10 @@ export CARGO_TARGET_DIR=\"\$HOME/.cargo\"
 }
 
 
-# todo, compile mode
-# todo, tldr, fzf-tab
-# zoxide 报错
+# TODO, fzf和zsh-vi-mode冲突
+# TODO, compile mode
+# TODO, tldr, fzf-tab
+# TODO, zoxide zshrc配置 报错
 
 function init_nodejs() {
     ilog "=> Initializing NodeJS" "$BOLD" "$GREEN"
