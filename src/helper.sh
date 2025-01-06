@@ -97,7 +97,51 @@ function add_dependency() {
             fi
         done
     fi
+}
 
+function change_source() {
+    local release_name
+    release_name=$(lsb_release -cs)
+
+    # Get all sources
+    local all_sources=() filename source_dir
+    source_dir="$(dirname "$(realpath "${BASH_SOURCE[0]}")")/src/sources"
+    for file in "${source_dir}"/*\.source; do
+        filename=$(basename "$file")
+        all_sources+=("${filename/\.source/}")
+    done
+
+    # Display
+    for i in "${!all_sources[@]}"; do
+        printf "%02d) %s\n" "$((i))" "${all_sources[$i]}"
+    done | {
+        if [ "$(tput cols)" -ge 120 ]; then
+            pr -o 8 -3 -t -w "$(tput cols)"
+        else
+            sed 's/^/        /'
+        fi
+    }
+
+    # Get user input
+    while true; do
+        read -r -p "${BLUE}Select the source you want to use (e.g. 1 or 2): ${GREEN}" choice && echo -n "${RESET}"
+        if [[ ! $choice =~ ^[0-9]+$ ]]; then
+            ilog "Invalid option: ${choice}, please input a number" "${NORMAL}" "${YELLOW}"
+        elif ((choice < 0 || choice > ${#all_sources[@]} - 1)); then
+            ilog "Out of range: ${choice}, please select a number between 0 to $((${#all_sources[@]} - 1))" "${NORMAL}" "${YELLOW}"
+        else
+            source_file="${source_dir}/${all_sources[$choice]}.source"
+            break
+        fi
+    done
+
+    # Backup and set new source
+    echo "$PASS" | sudo -S cp /etc/apt/sources.list /etc/apt/sources.list.backup-"$(date +%Y.%m.%d.%S)"
+    sed "s/\${release_name}/${release_name}/g" "${source_file}" | sudo tee /etc/apt/sources.list >/dev/null
+
+    # Update use new source
+    # sudo -S apt update
+    # sudo -S apt upgrade -y
 }
 
 function run_install_functions() {
@@ -144,7 +188,13 @@ function interactive_main() {
             # Display menu
             for i in "${!install_functions[@]}"; do
                 printf "%02d) %-${max_length}s\n" "$((i))" "${install_functions[$i]}"
-            done | pr -o 8 -3 -t -w "$(tput cols)"
+            done | {
+                if [ "$(tput cols)" -ge 120 ]; then
+                    pr -o 8 -3 -t -w "$(tput cols)"
+                else
+                    sed 's/^/        /'
+                fi
+            }
 
             # Get user input
             read -r -p "${BLUE}Select a tool to install (e.g. 0,1,2 or 1-3 or 1,3-5): ${GREEN}" choices && echo -n "${RESET}"
