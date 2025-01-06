@@ -1,4 +1,8 @@
 # 最终生成的脚本
 ./initUbuntu.sh
+initUbuntu.sh
+
+# 测试脚本
+test.sh
 
 *.backup
