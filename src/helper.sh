@@ -30,9 +30,17 @@ function usage() {
     echo "    ${BLUE}-c${RESET} change source from given sources"
     echo "    ${BLUE}-t${RESET} use TUI to initialize your ubuntu"
     echo "    ${BLUE}-i${RESET} interactive install selected tools. Available tools are:"
+
     for i in "${!install_functions[@]}"; do
         printf "%02d) %-${max_length}s\n" "$((i + 1))" "${install_functions[$i]}"
-    done | pr -o 8 -3 -t -w "$(($(tput cols) - 75))"
+    done | {
+        if [ "$(tput cols)" -ge 120 ]; then
+            pr -o 8 -3 -t -w "$(($(tput cols) - 75))"
+        else
+            sed 's/^/        /'
+        fi
+    }
+
     echo ""
     # shellcheck disable=SC2016
     echo 'By default, you can use `initUbuntu -i` to install single tool interactively you'\''d like to use'
@@ -58,7 +66,7 @@ function ilog() {
     echo "${style:-$RESET}${color:-$WHITE}${msg}${RESET}"
 }
 
-function install_dependency() {
+function add_dependency() {
     local packages=("ncurses-bin" "git" "vim" "tar" "unzip" "gzip" "wget" "curl" "dialog")
     local commands=("tput" "git" "vim" "tar" "unzip" "gzip" "wget" "curl" "dialog")
     local packages_to_install=()

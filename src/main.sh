@@ -17,11 +17,14 @@ while IFS= read -r line; do
     fi
 done <"${FILE_DIR}/initUbuntu.sh"
 
+# TODO: 添加换源
+# TODO: 添加TUI交互
+
 # parse args
 while getopts "hitd" opt; do
     case $opt in
     d)
-        install_dependency
+        add_dependency
         ;;
     i)
         interactive_main "${max_length}" "${install_functions[@]}"
