@@ -2,5 +2,6 @@ test.sh
 clash_subscription.txt
 subscription.txt
 config.cfg
+target.sh
 
 *.backup
