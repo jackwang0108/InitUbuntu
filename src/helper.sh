@@ -51,10 +51,10 @@ function usage() {
 function check_os() {
     # Check OS
     if ! uname -a | grep -qi 'ubuntu'; then
-        echo "当前系统为 $(uname -s), 该脚本仅支持Ubuntu操作系统, 退出..."
+        echo "This script only supports Ubuntu, your system is $(uname -s)"
         exit 0
     else
-        echo "当前系统信息: "
+        echo "System Information:"
         lsb_release -irdc
     fi
 }
@@ -155,6 +155,7 @@ function interactive_main() {
                     # ranged input, e.g. 1-10
                     if ! [[ $choice =~ ^[0-9]+-[0-9]$ ]]; then
                         ilog "Invalid input format: $1. Expected format: X-Y" "${BOLD}" "${YELLOW}"
+                        continue 2
                     fi
 
                     IFS='-' read -ra range <<<"$choice"
@@ -165,18 +166,26 @@ function interactive_main() {
                             functions_to_run+=("$i")
                         fi
                     done
-                elif ((0 <= choice && choice <= ${#install_functions[@]})); then
+                elif [[ "$choice" =~ ^[0-9]+$ ]] && ((0 <= choice && choice <= ${#install_functions[@]})); then
                     # single number, e.g. 5
+                    echo "here"
                     functions_to_run+=("$choice")
 
                 else
                     # out of range, e.g. 1000
                     ilog "Invalid Option: $choice, Try again." "${BOLD}" "${YELLOW}"
                     continue 2
+
                 fi
             done
             break
         done
+
+        # check if is null
+        if [[ -z "${functions_to_run[0]}" ]]; then
+            ilog "No tools selected, try again or quit to exit." "${BOLD}" "${YELLOW}"
+            continue
+        fi
 
         # check if quit
         for index in "${functions_to_run[@]}"; do
@@ -192,9 +201,41 @@ function interactive_main() {
         run_install_functions install_functions[@] functions_to_run[@] success_tools fail_tools
 
     done
+
+    # TODO: 返回安装成功和失败的工具
     echo "finished"
 }
 
 function TUI_main() {
-    echo "TUI Main"
+    local install_functions=("${@}") functions_to_run=()
+
+    local quit="false"
+
+    # Generate menu options
+    local options menu_options choices
+    for index in "${!install_functions[@]}"; do
+        options="${options} $((index + 1)) ${install_functions[$index]} off"
+    done
+    # shellcheck disable=SC2206
+    menu_options=(${options})
+
+    cmd=(dialog --title "InitUbuntu Tool Selection" --separate-output --checklist "Select tools to be installed:" 22 76 16)
+
+    choices=$("${cmd[@]}" "${menu_options[@]}" 2>&1 >/dev/tty)
+    clear
+
+    if [[ -z "$choices" ]]; then
+        ilog "No tools selected, see you~" "${BOLD}" "${GREEN}"
+        exit 0
+    fi
+
+    for choice in $choices; do
+        functions_to_run+=("$((choice - 1))")
+    done
+
+    # TODO: 返回安装成功和失败的工具
+    # run install functions
+    fail_tools=()
+    success_tools=()
+    run_install_functions install_functions[@] functions_to_run[@] success_tools fail_tools
 }
