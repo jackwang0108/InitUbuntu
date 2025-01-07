@@ -1,0 +1,30 @@
+# 这个部分定义了服务的基本信息, 这里是一个启动clash的服务
+[Unit]
+Description=开机自动运行clash
+# 必须要在网络启动之后才能运行, 因为Systemd是多线程运行服务的
+After=network.target
+# 同时该任务以来网络, 因此声明启动网络服务是该服务的依赖
+Wants=network.target
+
+
+
+# 这个部分定义了服务的运行参数和行为
+[Service]
+# 指定了服务的类型，这里是simple，表示是一个简单的服务，即执行指定的命令或脚本。
+Type=simple
+# 指定了运行服务的用户，这里根据运行脚本的用户进行修改，表示以该用户的身份运行服务
+User=#USER#
+# 无论是由于错误、异常退出还是手动停止，只要服务退出，它都应该立即重新启动。这确保了服务的持续性，即使出现问题导致服务停止，Systemd也会自动重新启动它，以恢复服务的正常运行。指定为always确保了下面的脚本会一直运行
+Restart=always
+# 指定了服务在重启之前的等待时间
+RestartSec=5s
+# 指定了服务可以打开的最大文件描述符数，这里是1048576
+LimitNOFILE=1048576
+# 指定了要运行的命令或脚本的绝对路径
+ExecStart=/home/#USER#/opt/clash/clash -d /home/#USER#/opt/clash
+# 服务重新加载（reload）时执行的命令或脚本。
+ExecReload=/home/#USER#/opt/clash/clash -d /home/#USER#/opt/clash
+# 这个部分定义了服务的安装和启动配置
+[Install]
+# 下面这段不能少, 强制要求了在用户登录前运行启动脚本
+WantedBy = multi-user.target
