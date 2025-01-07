@@ -18,6 +18,48 @@ DIM=$(tput dim)
 # Normal
 RESET=$(tput sgr0)
 
+# Project Base Directory
+PROJECT_BASE_DIR=$(dirname "$(realpath "${BASH_SOURCE[0]}")")
+
+# Shell Config
+SUPPORTED_SHELL=("bash" "zsh")
+EXISTING_SHELL=()
+EXISTING_SHELL_RC=()
+for shell in "${SUPPORTED_SHELL[@]}"; do
+    if command -v "${shell}" &>/dev/null; then
+        EXISTING_SHELL+=("${shell}")
+        EXISTING_SHELL_RC+=("${HOME}/.${shell}rc")
+    fi
+done
+
+SHELL_RC=
+function get_shell_rc() {
+
+    # print the choices menu
+    for i in "${!EXISTING_SHELL[@]}"; do
+        printf "%02d) %s\n" "$((i))" "${EXISTING_SHELL[$i]}"
+    done | {
+        if [ "$(tput cols)" -ge 120 ]; then
+            pr -o 8 -3 -t -w "$(tput cols)"
+        else
+            sed 's/^/        /'
+        fi
+    }
+
+    while true; do
+        read -r -p "${BLUE}Select a shell to add configure (e.g. 0): ${GREEN}" choice && echo -n "${RESET}"
+        if [[ ! $choice =~ ^[0-9]+$ ]]; then
+            ilog "Invalid option: ${choice}, please select a number" "${NORMAL}" "${YELLOW}"
+        elif ((choice < 0 || choice > ${#EXISTING_SHELL_RC[@]} - 1)); then
+            ilog "Out of range: ${choice}, please select a number between 0 to $((${#EXISTING_SHELL_RC[@]} - 1))" "${NORMAL}" "${YELLOW}"
+        else
+            break
+        fi
+    done
+
+    SHELL_RC="${EXISTING_SHELL_RC[$choice]}"
+}
+
 function usage() {
     local max_length=$1
     local install_functions=("${@:2}")
@@ -140,8 +182,8 @@ function change_source() {
     sed "s/\${release_name}/${release_name}/g" "${source_file}" | sudo tee /etc/apt/sources.list >/dev/null
 
     # Update use new source
-    # sudo -S apt update
-    # sudo -S apt upgrade -y
+    sudo apt update
+    sudo apt upgrade -y
 }
 
 function run_install_functions() {
@@ -169,9 +211,50 @@ function run_install_functions() {
         fi
     done
 
-    ending_text=$(echo -n "$(printf '\055%.0s' $(seq 1 "$width"))")
-    ilog "${ending_text}" "${BOLD}" "${MAGENTA}"
+    if [[ -n "${success_tools[0]}" ]] || [[ -n "${fail_tools[0]}" ]]; then
+        ending_text=$(echo -n "$(printf '\055%.0s' $(seq 1 "$width"))")
+        ilog "${ending_text}" "${BOLD}" "${MAGENTA}"
+    fi
+}
 
+function print_success_fail_tools() {
+    local success_tools=("${!1}")
+    local fail_tools=("${!2}")
+
+    # print delimiter
+    local width
+    width=$(tput cols)
+    text="Installation Summary"
+    text_length=${#text}
+    padding=$(((width - text_length) / 2))
+    padding_text=$(echo -n "$(printf '\055%.0s' $(seq 1 $padding))")
+    ilog "${padding_text}${text}${padding_text}" "${BOLD}" "${MAGENTA}"
+
+    # print success tools
+    ilog "Success tools:" "${BOLD}" "${GREEN}"
+
+    for tool in "${success_tools[@]}"; do
+        printf "%s\n" "${tool}"
+    done | {
+        if [ "$(tput cols)" -ge 120 ]; then
+            pr -o 8 -3 -t -w "$(tput cols)"
+        else
+            sed 's/^/        /'
+        fi
+    }
+
+    # print fail tools
+    ilog "Fail tools:" "${BOLD}" "${RED}"
+
+    for tool in "${fail_tools[@]}"; do
+        printf "%s\n" "${tool}"
+    done | {
+        if [ "$(tput cols)" -ge 120 ]; then
+            pr -o 8 -3 -t -w "$(tput cols)"
+        else
+            sed 's/^/        /'
+        fi
+    }
 }
 
 function interactive_main() {
@@ -197,7 +280,7 @@ function interactive_main() {
             }
 
             # Get user input
-            read -r -p "${BLUE}Select a tool to install (e.g. 0,1,2 or 1-3 or 1,3-5): ${GREEN}" choices && echo -n "${RESET}"
+            read -r -p "${BLUE}Select a tool to install (e.g. 0,1,2 or 1-3 or 1,3-5, q/Q to quit): ${GREEN}" choices && echo -n "${RESET}"
 
             # parse user input one by one
             for choice in $(echo "$choices" | tr ',' ' '); do
@@ -218,9 +301,10 @@ function interactive_main() {
                     done
                 elif [[ "$choice" =~ ^[0-9]+$ ]] && ((0 <= choice && choice <= ${#install_functions[@]})); then
                     # single number, e.g. 5
-                    echo "here"
                     functions_to_run+=("$choice")
 
+                elif [[ "$choice" =~ ^[Qq]$ ]]; then
+                    break 3
                 else
                     # out of range, e.g. 1000
                     ilog "Invalid Option: $choice, Try again." "${BOLD}" "${YELLOW}"
@@ -252,8 +336,8 @@ function interactive_main() {
 
     done
 
-    # TODO: 返回安装成功和失败的工具
-    echo "finished"
+    # print installation result
+    print_success_fail_tools success_tools[@] fail_tools[@]
 }
 
 function TUI_main() {
@@ -283,9 +367,11 @@ function TUI_main() {
         functions_to_run+=("$((choice - 1))")
     done
 
-    # TODO: 返回安装成功和失败的工具
     # run install functions
     fail_tools=()
     success_tools=()
     run_install_functions install_functions[@] functions_to_run[@] success_tools fail_tools
+
+    # print installation result
+    print_success_fail_tools success_tools[@] fail_tools[@]
 }
