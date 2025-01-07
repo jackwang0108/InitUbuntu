@@ -2,10 +2,14 @@
 ./initUbuntu.sh
 initUbuntu.sh
 
+# 从模板中生成的配置文件
+*.service
+
 # cache文件
-.proxy_cache
+*_cache
 
 # 测试脚本
 test.sh
 
-*.backup
+# 临时文件
+backup
