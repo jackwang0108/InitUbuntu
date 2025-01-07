@@ -2,6 +2,9 @@
 ./initUbuntu.sh
 initUbuntu.sh
 
+# cache文件
+.proxy_cache
+
 # 测试脚本
 test.sh
 
