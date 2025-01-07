@@ -2,6 +2,7 @@
 
 function install_proxy() {
     # FILE_PATH will be substituted by sed in Makefile
+    local MODULE_DIR
     MODULE_DIR=$(dirname FILE_PATH)
 
     # Choose Shell Configuration File
@@ -14,15 +15,8 @@ function install_proxy() {
         return 0
     fi
 
-    # Check config cache
-    if [[ -f $PROJECT_BASE_DIR/.proxy_cache ]]; then
-        # shellcheck disable=SC1091
-        source "$PROJECT_BASE_DIR/.proxy_cache"
-    else
-        read -r -p "Enter Proxy IP: " PROXY_IP
-        read -r -p "Enter Proxy Port: " PROXY_PORT
-        echo -e "PROXY_IP=$PROXY_IP\nPROXY_PORT=${PROXY_PORT}" >"$PROJECT_BASE_DIR/.proxy_cache"
-    fi
+    # Check proxy cache
+    check_cache .proxy_cache "PROXY_IP" "PROXY_PORT"
 
     # Install Terminal Proxy Tools
     sed -e "s/#PROXY_IP#/${PROXY_IP}/g" -e "s/#PROXY_PORT#/${PROXY_PORT}/g" "${MODULE_DIR}/proxy_tools.sh" >>"${SHELL_RC}"
