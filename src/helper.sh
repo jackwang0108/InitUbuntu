@@ -60,6 +60,63 @@ function get_shell_rc() {
     SHELL_RC="${EXISTING_SHELL_RC[$choice]}"
 }
 
+function add_systemd_service() {
+    local service_file=$1
+    local service_name
+    service_name=$(basename "${service_file}")
+
+    # Check if service file exists
+    if [[ ! -f "${service_file}" ]]; then
+        ilog "Service file ${service_file} not found" "${BOLD}" "${RED}"
+        return 1
+    fi
+
+    # Install the service
+    sudo cp "${service_file}" "/etc/systemd/system/${service_name}"
+    sudo systemctl daemon-reload
+    sudo systemctl enable "${service_name}"
+    sudo systemctl start "${service_name}"
+
+    # Check if service is running
+    local service_status
+    service_status=$(systemctl is-active "${service_name}")
+    if [[ "${service_status}" == "active" ]]; then
+        ilog "Service ${service_name} is running" "${NORMAL}" "${GREEN}"
+        return 0
+    else
+        ilog "Service ${service_name} failed to start" "${BOLD}" "${RED}"
+        ilog "Please check the service status by running: ${BOLD}${GREEN}journalctl -u ${service_name}${RESET} to see the failure reason" "${NORMAL}" "${YELLOW}"
+        return 1
+    fi
+}
+
+function remove_systemd_service() {
+    local service_name=$1
+
+    # Check if service exists
+    if ! systemctl list-units --full --all --no-legend --no-pager --type service --all --quiet | grep -q "${service_name}"; then
+        ilog "Service ${service_name} not found" "${BOLD}" "${YELLOW}"
+        return 0
+    fi
+
+    # Stop and disable the service
+    sudo systemctl stop "${service_name}"
+    sudo systemctl disable "${service_name}"
+
+    # Remove the service
+    sudo rm "/etc/systemd/system/${service_name}"
+    sudo systemctl daemon-reload
+
+    # Check if service is removed
+    if ! systemctl list-units --full --all --no-legend --no-pager --type service --all --quiet | grep -q "${service_name}"; then
+        ilog "Service ${service_name} is removed" "${NORMAL}" "${GREEN}"
+        return 0
+    else
+        ilog "Service ${service_name} failed to remove" "${BOLD}" "${RED}"
+        return 1
+    fi
+}
+
 function usage() {
     local max_length=$1
     local install_functions=("${@:2}")
@@ -99,6 +156,24 @@ function check_os() {
         echo "System Information:"
         lsb_release -irdc
     fi
+}
+
+function check_cache() {
+    local cache_file=$1
+    shift
+    local vars=("$@")
+
+    # Check if cache file exists
+    if [[ ! -f "$PROJECT_BASE_DIR/$cache_file" ]]; then
+        for var in "${vars[@]}"; do
+            read -r -p "${BLUE}Input your ${var}: ${GREEN}" value && echo -n "${RESET}"
+            echo "${var}=\"${value}\"" >>"$PROJECT_BASE_DIR/$cache_file"
+        done
+    fi
+
+    # Load cache file
+    # shellcheck disable=SC1090
+    source "$PROJECT_BASE_DIR/$cache_file"
 }
 
 function ilog() {
