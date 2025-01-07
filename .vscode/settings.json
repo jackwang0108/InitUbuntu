@@ -3,7 +3,10 @@
         "hitdc",
         "ilog",
         "irdc",
+        "mmdb",
         "msgbox",
-        "Succ"
+        "redir",
+        "Succ",
+        "yacd"
     ]
 }
