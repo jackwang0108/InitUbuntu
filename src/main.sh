@@ -17,9 +17,6 @@ while IFS= read -r line; do
     fi
 done <"${FILE_DIR}/initUbuntu.sh"
 
-# TODO: 添加换源
-# TODO: 添加TUI交互
-
 # parse args
 while getopts "hitdc" opt; do
     case $opt in
