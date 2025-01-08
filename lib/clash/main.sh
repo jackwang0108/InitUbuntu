@@ -128,6 +128,7 @@ function install_clash() {
         return 1
     fi
 
+    ilog "Clash Installed Successfully in ${CLASH_HOME}" "${BOLD}" "${GREEN}"
 }
 
 function clean_clash() {
