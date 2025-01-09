@@ -1,0 +1,17 @@
+# frpc.toml
+serverAddr = "#serverAddr#"
+serverPort = #serverPort#
+auth.token = "#authToken#"
+webServer.addr = "127.0.0.1"
+webServer.port = #webServerPort"
+webServer.user = "#webServerUser#"
+webServer.password = "#webServerPassword#"
+
+[[proxies]]
+name = "#proxyName#"
+type = "tcp"
+localIP = "127.0.0.1"
+localPort = 22
+remotePort = #remotePort#
+transport.useEncryption = true
+transport.useCompression = true
