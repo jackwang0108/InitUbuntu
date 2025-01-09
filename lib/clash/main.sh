@@ -128,7 +128,7 @@ function install_clash() {
         return 1
     fi
 
-    ilog "Clash Installed Successfully in ${CLASH_HOME}" "${BOLD}" "${GREEN}"
+    ilog "Clash Installed Successfully in ${CLASH_HOME}, default node may not be accessible, change the node in https://127.0.0.1:9090/ui" "${BOLD}" "${GREEN}"
 }
 
 function clean_clash() {
@@ -141,6 +141,7 @@ function clean_clash() {
     echo "Remove clash home directory..."
     rm -rf "${CLASH_HOME}"
 
+    # Remove clash systemd service
     echo "Remove clash systemd service..."
     if remove_systemd_service clash.service; then
         ilog "Clash systemd service removed successfully" "${NORMAL}" "${GREEN}"
