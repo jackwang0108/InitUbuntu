@@ -24,7 +24,6 @@ function install_frp() {
 
     # Declare Variables
     export FRP_HOME="${HOME}/opt/${install_target}"
-    service_template_file="${MODULE_DIR}/${install_target}.service.template"
 
     # Check if frp has already installed
     if [[ -d "${FRP_HOME}" ]]; then
